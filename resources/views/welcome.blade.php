@@ -52,12 +52,12 @@
         <div class="flex items-center justify-center w-full transition-opacity opacity-100 duration-750 lg:grow starting:opacity-0">
             <main class="flex max-w-[335px] w-full flex-col-reverse lg:max-w-4xl lg:flex-row">
                 <div class="text-[13px] leading-[20px] flex-1 p-6 pb-12 lg:p-20 bg-white dark:bg-[#161615] dark:text-[#EDEDEC] shadow-[inset_0px_0px_0px_1px_rgba(26,26,0,0.16)] dark:shadow-[inset_0px_0px_0px_1px_#fffaed2d] rounded-bl-lg rounded-br-lg lg:rounded-tl-lg lg:rounded-br-none">
-                    This software is manufactured by <a href="https://mennovanhout.nl">https://mennovanhout.nl</a>
+                    This software is manufactured by <a href="https://dtchdesign.nl">https://dtchdesign.nl"</a>
                 </div>
                 <div class="bg-[#252525] dark:bg-[#252525] relative lg:-ml-px -mb-px lg:mb-0 rounded-t-lg lg:rounded-t-none lg:rounded-r-lg aspect-[335/376] lg:aspect-auto w-full lg:w-[438px] shrink-0 overflow-hidden">
                     {{-- Laravel Logo --}}
                     <div style="padding: 50px">
-                        <a href="https://mennovanhout.nl"><img src="https://mennovanhout.nl/images/logo-dark.svg" alt="Menno van Hout" /></a>
+                        <a href="https://dtchdesign.nl""><img src="https://dtchdesign.nl/wp-content/uploads/2024/09/1-3.png" alt="Dtchdesign" /></a>
                     </div>
                     <div class="absolute inset-0 rounded-t-lg lg:rounded-t-none lg:rounded-r-lg shadow-[inset_0px_0px_0px_1px_rgba(26,26,0,0.16)] dark:shadow-[inset_0px_0px_0px_1px_#fffaed2d]"></div>
                 </div>

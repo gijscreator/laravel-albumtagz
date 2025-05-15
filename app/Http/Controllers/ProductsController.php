@@ -47,10 +47,8 @@ class ProductsController extends Controller
                     [
                         'price' => "14.95",
                         'compare_at_price' => "19.95",
-                        'inventory_policy' => 'continue',
                         'requires_shipping' => true,
-                        'inventory_management' => 'shopify',
-                        'inventory_quantity' => 100
+                        'inventory_management' => null,
                     ]
                 ],
                 'images' => [

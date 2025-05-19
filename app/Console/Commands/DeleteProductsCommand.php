@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Album;
 use Illuminate\Console\Command;
+use Signifly\Shopify\Exceptions\NotFoundException;
 use Signifly\Shopify\Shopify;
 
 class DeleteProductsCommand extends Command
@@ -12,7 +13,7 @@ class DeleteProductsCommand extends Command
 
     protected $description = 'Delete products that need to from shopify';
 
-    public function handle()
+    public function handle(): void
     {
         $shopify = new Shopify(
             config('albumtagz.shop_access_code'),
@@ -25,7 +26,16 @@ class DeleteProductsCommand extends Command
         // Delete from shopify
         foreach ($products as $product) {
             $this->info("Deleting product {$product->title} from Shopify");
-            $shopify->deleteProduct($product->shopify_id);
+
+            try {
+                $shopify->deleteProduct($product->shopify_id);
+            } catch (NotFoundException $e) {
+                $this->info("Product {$product->title} already deleted!");
+            } catch (\Exception $e) {
+                $this->error("Error deleting product {$product->title} from Shopify: {$e->getMessage()}");
+                continue;
+            }
+
             $product->delete();
         }
     }

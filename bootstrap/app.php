@@ -1,6 +1,7 @@
 <?php
 
 use App\Console\Commands\DeleteProductsCommand;
+use App\Console\Commands\KeepProductsForOrderCommnad;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -24,5 +25,6 @@ return Application::configure(basePath: dirname(__DIR__))
     })->withSchedule(
         function (Schedule $schedule) {
             $schedule->command(DeleteProductsCommand::class)->everyFiveMinutes();
+            $schedule->command(KeepProductsForOrderCommnad::class)->dailyAt('01:00');
         }
     )->create();

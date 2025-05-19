@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- *
+ * 
  *
  * @property int $id
  * @property string $title
@@ -28,6 +28,8 @@ use Illuminate\Database\Eloquent\Model;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Album whereUpdatedAt($value)
  * @property string $delete_at
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Album whereDeleteAt($value)
+ * @property int $shopify_id
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Album whereShopifyId($value)
  * @mixin \Eloquent
  */
 class Album extends Model

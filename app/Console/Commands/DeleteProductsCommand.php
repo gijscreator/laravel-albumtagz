@@ -4,10 +4,11 @@ namespace App\Console\Commands;
 
 use App\Models\Album;
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Console\Isolatable;
 use Signifly\Shopify\Exceptions\NotFoundException;
 use Signifly\Shopify\Shopify;
 
-class DeleteProductsCommand extends Command
+class DeleteProductsCommand extends Command implements Isolatable
 {
     protected $signature = 'products:delete-old';
 

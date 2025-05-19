@@ -4,9 +4,10 @@ namespace App\Console\Commands;
 
 use App\Models\Album;
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Console\Isolatable;
 use Signifly\Shopify\Shopify;
 
-class KeepProductsForOrderCommnad extends Command
+class KeepProductsForOrderCommnad extends Command implements Isolatable
 {
     protected $signature = 'products:keep-products-for-order';
 

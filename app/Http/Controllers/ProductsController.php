@@ -54,21 +54,12 @@ class ProductsController extends Controller
                     ]
                 ],
                 'images' => [
-    [
-        'src' => $image,
-        'filename' => 'mockup_' . $handle . '.jpg'
-    ],
-    [
-        'src' => 'https://cdn.shopify.com/s/files/1/0879/3322/3247/files/hit_me_hard_and_soft_design.jpg?v=1747651780'
-    ],
-    [
-        'src' => 'https://cdn.shopify.com/s/files/1/0879/3322/3247/files/CopiedeReplyto_thatgirldaphniescomment_png.webp?v=1747683285'
-    ],
-    [
-        'src' => 'https://cdn.shopify.com/s/files/1/0879/3322/3247/files/AirVinylPhotoPosts_1_png.webp?v=1747683285'
-    ]
-]
-
+                    [
+                        'src' => $image,
+                        'filename' => 'mockup_' . $handle . '.jpg'
+                    ]
+                ]
+            ]
         );
 
         // Create it in our database

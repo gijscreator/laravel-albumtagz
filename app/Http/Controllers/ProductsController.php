@@ -31,11 +31,10 @@ class ProductsController extends Controller
             config('albumtagz.shop_url'),
             config('albumtagz.shop_api_version')
         );
-
+ 
         $handle = Str::slug($data['title'] . '-' . $data['artist']);
-        $image = 'https://dtchdesign.nl/create-product/img.php?albumImg=' . urlencode($data['image']);
-$image = 'https://cdn.shopify.com/s/files/1/0879/3322/3247/files/AirVinylPhotoPosts_1_png.webp?v=1747683285';
-$handle = Str::slug($data['title'] . '-' . $data['artist']);
+        $image1= 'https://dtchdesign.nl/create-product/img.php?albumImg=' . urlencode($data['image']);
+        $image2 = 'https://cdn.shopify.com/s/files/1/0879/3322/3247/files/AirVinylPhotoPosts_1_png.webp?v=1747683285';
 
 $product = $shopify->createProduct([
     'title' => "{$data['title']} NFC Keychain",
@@ -54,9 +53,15 @@ $product = $shopify->createProduct([
     ],
     'images' => [
         [
-            'src' => $image,
-            'filename' => 'mockup_' . $handle . '.webp'
+            'src' => $image1,
+            'filename' => 'mockup1_' . $handle . '.webp'
+        ],
+        [
+            'src' => $image2,
+            'filename' => 'mockup2_' . $handle . '.webp'
         ]
+    ]
+]);
     ]
 ]);
 

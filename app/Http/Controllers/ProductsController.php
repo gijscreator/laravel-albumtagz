@@ -34,31 +34,32 @@ class ProductsController extends Controller
 
         $handle = Str::slug($data['title'] . '-' . $data['artist']);
         $image = 'https://dtchdesign.nl/create-product/img.php?albumImg=' . urlencode($data['image']);
+$image = 'https://cdn.shopify.com/s/files/1/0879/3322/3247/files/AirVinylPhotoPosts_1_png.webp?v=1747683285';
+$handle = Str::slug($data['title'] . '-' . $data['artist']);
 
-        $product = $shopify->createProduct(
-            [
-                'title' => "{$data['title']} NFC Keychain",
-                'vendor' => $data['artist'],
-                'product_type' => 'Music',
-                'status' => 'active',
-                'handle' => Str::slug($data['title'] . '-' . $data['artist']),
-                'body_html' => "<p>Artist: {$data['artist']}</p><p>Spotify URL: {$data['spotifyUrl']}</p>",
-                'variants' => [
-                    [
-                        'price' => "14.95",
-                        'compare_at_price' => "19.95",
-                        'requires_shipping' => true,
-                        'inventory_management' => null,
-                    ]
-                ],
-                'images' => [
-                    [
-                        'src' => $image,
-                        'filename' => 'mockup_' . $handle . '.jpg'
-                    ]
-                ]
-            ]
-        );
+$product = $shopify->createProduct([
+    'title' => "{$data['title']} NFC Keychain",
+    'vendor' => $data['artist'],
+    'product_type' => 'Music',
+    'status' => 'active',
+    'handle' => $handle,
+    'body_html' => "<p>Artist: {$data['artist']}</p><p>Spotify URL: {$data['spotifyUrl']}</p>",
+    'variants' => [
+        [
+            'price' => "14.95",
+            'compare_at_price' => "19.95",
+            'requires_shipping' => true,
+            'inventory_management' => null,
+        ]
+    ],
+    'images' => [
+        [
+            'src' => $image,
+            'filename' => 'mockup_' . $handle . '.webp'
+        ]
+    ]
+]);
+
 
         // Create it in our database
         $album = Album::create([

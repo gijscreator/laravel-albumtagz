@@ -37,7 +37,7 @@ class ProductsController extends Controller
 
         $product = $shopify->createProduct(
             [
-                'title' => "{$data['title']} NFC Keychain",
+                'title' => "{$data['title']} AirVinyl",
                 'vendor' => $data['artist'],
                 'product_type' => 'Music',
                 'status' => 'active',

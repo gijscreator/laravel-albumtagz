@@ -62,9 +62,6 @@ $product = $shopify->createProduct([
         ]
     ]
 ]);
-    ]
-]);
-
 
         // Create it in our database
         $album = Album::create([

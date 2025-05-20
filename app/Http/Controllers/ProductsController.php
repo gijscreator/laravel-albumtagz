@@ -31,43 +31,34 @@ class ProductsController extends Controller
             config('albumtagz.shop_url'),
             config('albumtagz.shop_api_version')
         );
- 
-$handle = Str::slug($data['title'] . '-' . $data['artist']);
-$image1 = 'https://i.imgur.com/VALID_IMAGE_1.jpg'; // Replace with valid
-$image2 = 'https://cdn.shopify.com/...'; // Second image
 
-// Step 1: Create product w/ first image
-$product = $shopify->createProduct([
-    'title' => "{$data['title']} NFC Keychain",
-    'vendor' => $data['artist'],
-    'product_type' => 'Music',
-    'status' => 'active',
-    'handle' => $handle,
-    'body_html' => "<p>Artist: {$data['artist']}</p><p>Spotify URL: {$data['spotifyUrl']}</p>",
-    'variants' => [
-        [
-            'price' => "14.95",
-            'compare_at_price' => "19.95",
-            'requires_shipping' => true,
-            'inventory_management' => null,
-        ]
-    ],
-    'images' => [
-        [
-            'src' => $image1,
-            'filename' => 'mockup1_' . $handle . '.webp',
-            'position' => 1
-        ]
-    ]
-]);
+        $handle = Str::slug($data['title'] . '-' . $data['artist']);
+        $image = 'https://dtchdesign.nl/create-product/img.php?albumImg=' . urlencode($data['image']);
 
-// Step 2: Add second image
-$shopify->createImage($product['id'], [
-    'src' => $image2,
-    'filename' => 'mockup2_' . $handle . '.webp',
-    'position' => 2
-]);
-
+        $product = $shopify->createProduct(
+            [
+                'title' => "{$data['title']} NFC Keychain",
+                'vendor' => $data['artist'],
+                'product_type' => 'Music',
+                'status' => 'active',
+                'handle' => Str::slug($data['title'] . '-' . $data['artist']),
+                'body_html' => "<p>Artist: {$data['artist']}</p><p>Spotify URL: {$data['spotifyUrl']}</p>",
+                'variants' => [
+                    [
+                        'price' => "14.95",
+                        'compare_at_price' => "19.95",
+                        'requires_shipping' => true,
+                        'inventory_management' => null,
+                    ]
+                ],
+                'images' => [
+                    [
+                        'src' => $image,
+                        'filename' => 'mockup_' . $handle . '.jpg'
+                    ]
+                ]
+            ]
+        );
 
         // Create it in our database
         $album = Album::create([

@@ -32,10 +32,11 @@ class ProductsController extends Controller
             config('albumtagz.shop_api_version')
         );
  
-        $handle = Str::slug($data['title'] . '-' . $data['artist']);
-        $image1 = 'https://dtchdesign.nl/create-product/img.php?albumImg=' . urlencode($data['image']);
-        $image2 = 'https://cdn.shopify.com/s/files/1/0879/3322/3247/files/AirVinylPhotoPosts_1_png.webp?v=1747683285';
+$handle = Str::slug($data['title'] . '-' . $data['artist']);
+$image1 = 'https://i.imgur.com/VALID_IMAGE_1.jpg'; // Replace with valid
+$image2 = 'https://cdn.shopify.com/...'; // Second image
 
+// Step 1: Create product w/ first image
 $product = $shopify->createProduct([
     'title' => "{$data['title']} NFC Keychain",
     'vendor' => $data['artist'],
@@ -56,14 +57,17 @@ $product = $shopify->createProduct([
             'src' => $image1,
             'filename' => 'mockup1_' . $handle . '.webp',
             'position' => 1
-        ],
-        [
-            'src' => $image2,
-            'filename' => 'mockup2_' . $handle . '.webp',
-            'position' => 2
         ]
     ]
 ]);
+
+// Step 2: Add second image
+$shopify->createImage($product['id'], [
+    'src' => $image2,
+    'filename' => 'mockup2_' . $handle . '.webp',
+    'position' => 2
+]);
+
 
         // Create it in our database
         $album = Album::create([

@@ -33,7 +33,7 @@ class ProductsController extends Controller
         );
 
         $handle = Str::slug($data['title'] . '-' . $data['artist']);
-        $image = 'https://dtchdesign.nl/create-product/img.php?albumImg=' . urlencode($data['image']);
+        $image = 'https://dtchdesign.nl/create-product/imgair.php?albumImg=' . urlencode($data['image']);
 
         $product = $shopify->createProduct(
             [

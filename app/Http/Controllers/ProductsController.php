@@ -16,8 +16,9 @@ class ProductsController extends Controller
         $data = $request->validated();
 
         // Check if product already exists
-        $existingProduct = Album::whereSpotifyUrl($data['spotifyUrl'])
-            ->first();
+        $airvinylUrl = $data['spotifyUrl'] . '-airvinyl';
+        $existingProduct = Album::whereSpotifyUrl($airvinylUrl)->first();
+
 
         if ($existingProduct) {
             $existingProduct->delete_at = now()->addMinutes(15);

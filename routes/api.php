@@ -9,7 +9,7 @@ use App\Http\Controllers\SearchController;
 Route::post('/products/albumtagz', [ProductsController::class, 'store']);
 Route::post('/products/airvinyls', [ProductsControllerAirvinyls::class, 'store']);
 Route::post('/products/airvinylrefill', [ProductsControllerAirvinylrefill::class, 'store']);
-Route::post('/products/airvinylbundle', [\App\Http\Controllers\AirvinylbundleController::class, 'store']);
+Route::post('/products/airvinylbundle', [AirvinylbundleController::class, 'store']);
 Route::post('/products/keep', [ProductsController::class, 'keep']);
 Route::get('/search', [SearchController::class, 'search']);
 

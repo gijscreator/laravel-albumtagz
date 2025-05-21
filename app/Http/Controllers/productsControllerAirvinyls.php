@@ -47,8 +47,8 @@ class ProductsControllerAirvinyls extends Controller
                 'body_html' => "<p>Artist: {$data['artist']}</p><p>Spotify URL: {$data['spotifyUrl']}</p>",
                 'variants' => [
                     [
-                        'price' => "14.95",
-                        'compare_at_price' => "19.95",
+                        'price' => "19.95",
+                        'compare_at_price' => "29.95",
                         'requires_shipping' => true,
                         'inventory_management' => null,
                     ]

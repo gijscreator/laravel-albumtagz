@@ -56,7 +56,6 @@ class ProductsControllerAirvinyls extends Controller
                 'images' => [
                     [
                         'src' => $image,
-                        'filename' => 'mockup_' . $handle . '.jpg'
                     ]
                 ]
             ]

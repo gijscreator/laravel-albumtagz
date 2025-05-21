@@ -53,24 +53,5 @@ class ProductsControllerAlbumtagz extends Controller
             ]
         );
 
-        // Create it in our database
-        $album = Album::create([
-            'shopify_id' => $product['id'],
-            'title' => $data['title'],
-            'artist' => $data['artist'],
-            'image' => $image,
-            'spotify_url' => $data['spotifyUrl'],
-            'shopify_url' => 'https://www.albumtagz.com/products/' . $product['handle'],
-            'delete_at' => now()->addMinutes(15)
-        ]);
-
-
-
-
-
-
-
-
-
         return new AlbumResource($album);
     }

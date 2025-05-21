@@ -9,7 +9,7 @@ use App\Models\Album;
 use Illuminate\Support\Str;
 use Signifly\Shopify\Shopify;
 
-class ProductsControllerAirvinyls extends Controller
+class ProductsController extends Controller
 {
     public function store(ProductRequest $request)
     {
@@ -47,8 +47,8 @@ class ProductsControllerAirvinyls extends Controller
                 'body_html' => "<p>Artist: {$data['artist']}</p><p>Spotify URL: {$data['spotifyUrl']}</p>",
                 'variants' => [
                     [
-                        'price' => "19.95",
-                        'compare_at_price' => "29.95",
+                        'price' => "14.95",
+                        'compare_at_price' => "19.95",
                         'requires_shipping' => true,
                         'inventory_management' => null,
                     ]

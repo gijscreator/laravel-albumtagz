@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\ProductRequest;
+use App\Http\Requests\BundleProductRequest;
 use Illuminate\Support\Str;
 use Signifly\Shopify\Shopify;
 
 class AirvinylbundleController extends Controller
 {
-    public function store(ProductRequest $request)
+    public function store(BundleProductRequest $request)
     {
         $data = $request->validated();
 

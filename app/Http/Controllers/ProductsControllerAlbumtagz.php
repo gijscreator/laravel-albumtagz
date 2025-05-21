@@ -73,18 +73,4 @@ class ProductsControllerAlbumtagz extends Controller
 
         return new AlbumResource($album);
     }
-
-    public function keep(KeepRequest $request)
-    {
-        $album = Album::whereSpotifyUrl($request->validated()['spotifyUrl'])
-            ->firstOrFail();
-
-        $album->delete_at = now()->addHours(48);
-
-        $album->save();
-
-        return response()->json([
-            'message' => 'Album kept for 24 hours'
-        ]);
-    }
 }

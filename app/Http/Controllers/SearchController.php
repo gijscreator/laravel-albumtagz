@@ -6,7 +6,7 @@ use Aerni\Spotify\Facades\Spotify;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
-class SearchController extends Controller
+class SearchController
 {
     public function search(Request $request)
     {

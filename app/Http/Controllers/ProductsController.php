@@ -11,12 +11,17 @@ use Signifly\Shopify\Shopify;
 
 class ProductsController extends Controller
 {
+    public function getProductType(): string
+    {
+        return 'albumtag';
+    }
+
     public function store(ProductRequest $request)
     {
         $data = $request->validated();
 
         // Check if product already exists
-        $existingProduct = Album::whereSpotifyUrl($data['spotifyUrl'])
+        $existingProduct = Album::whereProductType($this->getProductType())->whereSpotifyUrl($data['spotifyUrl'])
             ->first();
 
         if ($existingProduct) {
@@ -68,7 +73,8 @@ class ProductsController extends Controller
             'image' => $image,
             'spotify_url' => $data['spotifyUrl'],
             'shopify_url' => 'https://www.albumtagz.com/products/' . $product['handle'],
-            'delete_at' => now()->addMinutes(15)
+            'delete_at' => now()->addMinutes(15),
+            'product_type' => $this->getProductType()
         ]);
 
         return new AlbumResource($album);
@@ -79,12 +85,12 @@ class ProductsController extends Controller
         $album = Album::whereSpotifyUrl($request->validated()['spotifyUrl'])
             ->firstOrFail();
 
-        $album->delete_at = now()->addHours(48);
+        $album->delete_at = now()->addHours(24);
 
         $album->save();
 
         return response()->json([
-            'message' => 'Album kept for 24 hours'
+            'message' => 'Album kept longer!'
         ]);
     }
 }

@@ -12,10 +12,6 @@ return new class extends Migration
             if (!Schema::hasColumn('albums', 'product_type')) {
                 $table->string('product_type')->default('airvinyl');
             }
-
-            if (!Schema::hasColumn('albums', 'delete_at')) {
-                $table->timestamp('delete_at')->nullable();
-            }
         });
     }
 

@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * 
+ *
  *
  * @property int $id
  * @property string $title
@@ -30,6 +30,8 @@ use Illuminate\Database\Eloquent\Model;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Album whereDeleteAt($value)
  * @property int $shopify_id
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Album whereShopifyId($value)
+ * @property string $product_type
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Album whereProductType($value)
  * @mixin \Eloquent
  */
 class Album extends Model
@@ -41,12 +43,13 @@ class Album extends Model
         'image',
         'spotify_url',
         'shopify_url',
-        'delete_at'
+        'delete_at',
+        'product_type'
     ];
 
     protected $hidden = [
         'shopify_id',
-        'delete_at'
+        'delete_at',
     ];
 
     protected function casts(): array

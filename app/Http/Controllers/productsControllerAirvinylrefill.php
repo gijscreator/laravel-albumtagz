@@ -38,7 +38,7 @@ class ProductsControllerAirvinylrefill extends Controller
 
         $product = $shopify->createProduct(
             [
-                'title' => "{$data['title']} AirVinyl",
+                'title' => "{$data['title']} Refill",
                 'vendor' => $data['artist'],
                 'product_type' => 'Music',
                 'status' => 'active',
@@ -47,8 +47,8 @@ class ProductsControllerAirvinylrefill extends Controller
                 'body_html' => "<p>Artist: {$data['artist']}</p><p>Spotify URL: {$data['spotifyUrl']}</p>",
                 'variants' => [
                     [
-                        'price' => "14.95",
-                        'compare_at_price' => "19.95",
+                        'price' => "2.95",
+                        'compare_at_price' => "4.95",
                         'requires_shipping' => true,
                         'inventory_management' => null,
                     ]

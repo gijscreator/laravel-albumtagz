@@ -9,7 +9,7 @@ use App\Models\Album;
 use Illuminate\Support\Str;
 use Signifly\Shopify\Shopify;
 
-class ProductsController extends Controller
+class ProductsControllerAirvinylrefill extends Controller
 {
     public function store(ProductRequest $request)
     {

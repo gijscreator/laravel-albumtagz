@@ -16,7 +16,7 @@ class ProductsControllerAirvinyls extends Controller
         $data = $request->validated();
 
         // Check if product already exists
-        $airvinylUrl = $data['spotifyUrl'] . '-airvinyl';
+        $airvinylUrl = $data['spotifyUrl'] . '-Keychain';
         $existingProduct = Album::whereSpotifyUrl($airvinylUrl)->first();
 
 

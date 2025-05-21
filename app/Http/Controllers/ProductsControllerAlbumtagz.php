@@ -1,12 +1,24 @@
-class ProductsControllerAlbumtagz extends Controller
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Requests\KeepRequest;
+use App\Http\Requests\ProductRequest;
+use App\Http\Resources\AlbumResource;
+use App\Models\Album;
+use Illuminate\Support\Str;
+use Signifly\Shopify\Shopify;
+
+class ProductsControllerAirvinyls extends Controller
 {
     public function store(ProductRequest $request)
     {
         $data = $request->validated();
 
         // Check if product already exists
-        $existingProduct = Album::whereSpotifyUrl($data['spotifyUrl'])
-            ->first();
+        $airvinylUrl = $data['spotifyUrl'] . '-airvinyl';
+        $existingProduct = Album::whereSpotifyUrl($airvinylUrl)->first();
+
 
         if ($existingProduct) {
             $existingProduct->delete_at = now()->addMinutes(15);
@@ -22,11 +34,7 @@ class ProductsControllerAlbumtagz extends Controller
         );
 
         $handle = Str::slug($data['title'] . '-' . $data['artist']);
-        $image = 'https://dtchdesign.nl/create-product/img.php?albumImg=' . urlencode($data['image']);
-
-
-
-
+        $image = 'https://dtchdesign.nl/create-product/imgair.php?albumImg=' . urlencode($data['image']);
 
         $product = $shopify->createProduct(
             [
@@ -34,7 +42,7 @@ class ProductsControllerAlbumtagz extends Controller
                 'vendor' => $data['artist'],
                 'product_type' => 'Music',
                 'status' => 'active',
-                'handle' => Str::slug($data['title'] . '-' . $data['artist']),
+                'handle' => Str::slug($data['title'] . '-' . $data['artist'] . '-Keychain'),
                 'body_html' => "<p>Artist: {$data['artist']}</p><p>Spotify URL: {$data['spotifyUrl']}</p>",
                 'variants' => [
                     [
@@ -53,5 +61,17 @@ class ProductsControllerAlbumtagz extends Controller
             ]
         );
 
+        // Create it in our database
+        $album = Album::create([
+            'shopify_id' => $product['id'],
+            'title' => $data['title'],
+            'artist' => $data['artist'],
+            'image' => $image,
+            'spotify_url' => $data['spotifyUrl'],
+            'shopify_url' => 'https://www.albumtagz.com/products/' . $product['handle'],
+            'delete_at' => now()->addMinutes(15)
+        ]);
+
         return new AlbumResource($album);
     }
+}

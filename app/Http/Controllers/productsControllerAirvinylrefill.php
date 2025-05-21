@@ -47,7 +47,7 @@ class productsControllerAirvinylrefill extends Controller
                 'vendor' => $data['artist'],
                 'product_type' => 'Music',
                 'status' => 'active',
-                'handle' => Str::slug($data['title'] . '-' . $data['artist'] . '-airvinyl'),
+                'handle' => Str::slug($data['title'] . '-' . $data['artist'] . '-refill'),
                 'template_suffix' => 'airvinyl-customize',
                 'body_html' => "<p>Artist: {$data['artist']}</p><p>Spotify URL: {$data['spotifyUrl']}</p>",
                 'variants' => [

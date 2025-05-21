@@ -46,7 +46,7 @@ class ProductsController extends Controller
                 'vendor' => $data['artist'],
                 'product_type' => 'Music',
                 'status' => 'active',
-                'handle' => Str::slug($data['title'] . '-' . $data['artist']),
+                'handle' => Str::slug($data['title'] . '-' . $data['artist']) . '-albumtag',
                 'body_html' => "<p>Artist: {$data['artist']}</p><p>Spotify URL: {$data['spotifyUrl']}</p>",
                 'variants' => [
                     [

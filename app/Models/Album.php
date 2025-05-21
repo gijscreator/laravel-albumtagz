@@ -40,6 +40,7 @@ class Album extends Model
         'artist',
         'image',
         'spotify_url',
+        'product_type',
         'shopify_url',
         'delete_at'
     ];

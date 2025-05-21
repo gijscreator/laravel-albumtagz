@@ -19,7 +19,11 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['*'],
+    'allowed_origins' => [
+    'https://www.albumtagz.com',
+    'https://albumtagz.com', // indien zonder www ook gebruikt
+     ],
+
 
     'allowed_origins_patterns' => [],
 

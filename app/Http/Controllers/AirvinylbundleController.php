@@ -6,8 +6,8 @@ use App\Http\Requests\BundleProductRequest;
 use Illuminate\Support\Str;
 use Signifly\Shopify\Shopify;
 
-class AirvinylbundleController extends Controller
-{
+class AirvinylbundleController
+    
     public function store(BundleProductRequest $request)
     {
         $data = $request->validated();

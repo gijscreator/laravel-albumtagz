@@ -40,7 +40,7 @@ class KeepProductsForOrderCommnad extends Command implements Isolatable
 
             // Keep products in the database
             Album::whereIn('shopify_id', $product_ids)
-                ->update(['delete_at' => now()->addDay()]);
+                ->update(['delete_at' => now()->addHours(48)]);
         }
     }
 }

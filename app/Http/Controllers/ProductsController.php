@@ -85,7 +85,7 @@ class ProductsController extends Controller
         $album = Album::whereSpotifyUrl($request->validated()['spotifyUrl'])
             ->firstOrFail();
 
-        $album->delete_at = now()->addHours(24);
+        $album->delete_at = now()->addHours(48);
 
         $album->save();
 

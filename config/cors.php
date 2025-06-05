@@ -21,7 +21,8 @@ return [
 
     'allowed_origins' => [
     'https://www.albumtagz.com',
-    'https://albumtagz.com', // indien zonder www ook gebruikt
+    'https://albumtagz.com',
+    'http://127.0.0.1:3002'. // indien zonder www ook gebruikt
      ],
 
 

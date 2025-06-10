@@ -56,7 +56,7 @@ class ProductsController extends Controller
                         'inventory_management' => null,
                     ]
                 ],
-               'images' => [
+'images' => [
     [
         'src' => $image,
         'filename' => 'mockup_' . $handle . '.jpg'
@@ -64,8 +64,17 @@ class ProductsController extends Controller
     [
         'src' => 'https://cdn.shopify.com/s/files/1/0879/3322/3247/files/12_3.jpg?v=1749543016',
         'filename' => 'extra_' . $handle . '.jpg'
+    ],
+    [
+        'src' => 'https://cdn.shopify.com/s/files/1/0879/3322/3247/files/copy_3C9E333D-9F93-4B1D-8CA5-3D29FD978A62.gif?v=1738171019',
+        'filename' => 'copy_' . $handle . '.gif'
+    ],
+    [
+        'src' => 'https://cdn.shopify.com/s/files/1/0879/3322/3247/files/image.gif?v=1736846951',
+        'filename' => 'image_' . $handle . '.gif'
     ]
 ]
+
 
             ]
         );

@@ -62,8 +62,8 @@ class ProductsController extends Controller
         'filename' => 'mockup_' . $handle . '.jpg'
     ],
     [
-        'src' => 'https://cdn.shopify.com/s/files/1/0879/3322/3247/files/12_1.png?v=1749542863',
-        'filename' => 'extra_' . $handle . '.png'
+        'src' => 'https://cdn.shopify.com/s/files/1/0879/3322/3247/files/12_3.jpg?v=1749543016',
+        'filename' => 'extra_' . $handle . '.jpg'
     ]
 ]
 

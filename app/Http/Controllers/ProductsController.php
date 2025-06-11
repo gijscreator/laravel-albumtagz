@@ -1,3 +1,4 @@
+@@ -1,96 +1,96 @@
 <?php
 
 namespace App\Http\Controllers;
@@ -42,7 +43,7 @@ class ProductsController extends Controller
 
         $product = $shopify->createProduct(
             [
-                'title' => "{$data['title']} Albumtag",
+                'title' => "{$data['title']} NFC Keychain",
                 'vendor' => $data['artist'],
                 'product_type' => 'Music',
                 'status' => 'active',
@@ -56,20 +57,15 @@ class ProductsController extends Controller
                         'inventory_management' => null,
                     ]
                 ],
-'images' => [
-    [
-        'src' => $image,
-        'filename' => 'mockup_' . $handle . '.jpg'
-    ],
-    [
-        'src' => 'https://cdn.shopify.com/s/files/1/0879/3322/3247/files/12_3.jpg?v=1749554800',
-        'filename' => 'extra_' . $handle . '.jpg'
-    ]
-]
-
-
+                'images' => [
+                    [
+                        'src' => $image,
+                        'filename' => 'mockup_' . $handle . '.jpg'
+                    ]
+                ]
             ]
         );
+
         // Create it in our database
         $album = Album::create([
             'shopify_id' => $product['id'],
@@ -92,7 +88,7 @@ class ProductsController extends Controller
 
         $album->delete_at = now()->addHours(48);
 
-        $album->save();
+        $album->save();More actions
 
         return response()->json([
             'message' => 'Album kept longer!'

@@ -1,4 +1,3 @@
-@@ -1,96 +1,96 @@
 <?php
 
 namespace App\Http\Controllers;
@@ -47,7 +46,7 @@ class ProductsController extends Controller
                 'vendor' => $data['artist'],
                 'product_type' => 'Music',
                 'status' => 'active',
-                'handle' => Str::slug($data['title'] . '-' . $data['artist']) . '-albumtag',
+                'handle' => Str::slug($data['title'] . '-' . $data['artist']),
                 'body_html' => "<p>Artist: {$data['artist']}</p><p>Spotify URL: {$data['spotifyUrl']}</p>",
                 'variants' => [
                     [
@@ -86,9 +85,9 @@ class ProductsController extends Controller
         $album = Album::whereSpotifyUrl($request->validated()['spotifyUrl'])
             ->firstOrFail();
 
-        $album->delete_at = now()->addHours(48);
+        $album->delete_at = now()->addHours(24);
 
-        $album->save();More actions
+        $album->save();
 
         return response()->json([
             'message' => 'Album kept longer!'

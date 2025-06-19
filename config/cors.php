@@ -23,6 +23,7 @@ return [
     'https://www.albumtagz.com',
     'https://albumtagz.com',
     'https://a4f650a3-30e8-43ad-a83a-3f4c1e622c95.lovableproject.com',
+    'https://song-pocket-design.lovable.app',
     'http://127.0.0.1:3002' // indien zonder www ook gebruikt
      ],
 

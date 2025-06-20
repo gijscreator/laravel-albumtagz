@@ -22,7 +22,7 @@ return [
     'allowed_origins' => [
     'https://www.albumtagz.com',
     'https://albumtagz.com',
-    'https://pikwy-page-revamp.lovable.app',
+    'https://albumtagz-flow-builder.lovable.app',
     'https://create.albumtagz.com',
     'http://127.0.0.1:3002' // indien zonder www ook gebruikt
      ],

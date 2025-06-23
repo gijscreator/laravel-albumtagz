@@ -64,7 +64,7 @@ class ProductsController extends Controller
                 ]
             ]
         );
-
+        $variantId = $product['variants'][0]['id'] ?? null;
         // Create it in our database
         $album = Album::create([
             'shopify_id' => $product['id'],
@@ -75,6 +75,7 @@ class ProductsController extends Controller
             'shopify_url' => 'https://www.albumtagz.com/products/' . $product['handle'],
             'delete_at' => now()->addMinutes(15),
             'product_type' => $this->getProductType()
+            'variant_id' => $variantId,
         ]);
 
         return new AlbumResource($album);

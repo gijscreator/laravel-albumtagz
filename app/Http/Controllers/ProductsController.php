@@ -69,7 +69,7 @@ class ProductsController extends Controller
         // Create it in our database
         $album = Album::create([
             'shopify_id' => $product['id'],
-            'variant_id' => $variantId,
+            'variant_id' => $product['variants'][0]['id'] ?? null,
             'title' => $data['title'],
             'artist' => $data['artist'],
             'image' => $image,

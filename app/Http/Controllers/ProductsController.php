@@ -12,80 +12,73 @@ use Illuminate\Http\JsonResponse;
 
 class ProductsController extends Controller
 {
-    public function getProductType(): string
-    {
-        return 'albumtag';
+public function store(ProductRequest $request): \Illuminate\Http\JsonResponse
+{
+    $data = $request->validated();
+
+    // Check if product already exists
+    $existingProduct = Album::whereProductType($this->getProductType())
+        ->whereSpotifyUrl($data['spotifyUrl'])
+        ->first();
+
+    if ($existingProduct) {
+        $existingProduct->delete_at = now()->addMinutes(15);
+        $existingProduct->save();
+        return response()->json(new AlbumResource($existingProduct));
     }
 
-    public function store(ProductRequest $request): JsonResponse
-    {
-        try {
-            $data = $request->validated();
+    // Create product in Shopify
+    $shopify = new Shopify(
+        config('albumtagz.shop_access_code'),
+        config('albumtagz.shop_url'),
+        config('albumtagz.shop_api_version')
+    );
 
-            // Check if product already exists
-            $existingProduct = Album::whereProductType($this->getProductType())
-                ->whereSpotifyUrl($data['spotifyUrl'])
-                ->first();
+    $handle = Str::slug($data['title'] . '-' . $data['artist']);
+    $image = 'https://dtchdesign.nl/create-product/img.php?albumImg=' . urlencode($data['image']);
 
-            if ($existingProduct) {
-                $existingProduct->delete_at = now()->addMinutes(15);
-                $existingProduct->save();
-               return response()->json(new AlbumResource($album));
-            }
+    $product = $shopify->createProduct([
+        'title' => "{$data['title']} Albumtag",
+        'vendor' => $data['artist'],
+        'product_type' => 'Music',
+        'status' => 'active',
+        'handle' => $handle,
+        'body_html' => "<p>Artist: {$data['artist']}</p><p>Spotify URL: {$data['spotifyUrl']}</p>",
+        'variants' => [
+            [
+                'price' => "14.95",
+                'compare_at_price' => "19.95",
+                'requires_shipping' => true,
+                'inventory_management' => null,
+            ]
+        ],
+        'images' => [
+            [
+                'src' => $image,
+                'filename' => 'mockup_' . $handle . '.jpg'
+            ]
+        ]
+    ]);
 
-            // Create it at Shopify
-            $shopify = new Shopify(
-                config('albumtagz.shop_access_code'),
-                config('albumtagz.shop_url'),
-                config('albumtagz.shop_api_version')
-            );
+    // Get the variant ID
+    $variantId = $product['variants'][0]['id'] ?? null;
 
-            $handle = Str::slug($data['title'] . '-' . $data['artist']);
-            $image = 'https://dtchdesign.nl/create-product/img.php?albumImg=' . urlencode($data['image']);
+    // Store in DB
+    $album = Album::create([
+        'shopify_id' => $product['id'],
+        'variant_id' => $variantId,
+        'title' => $data['title'],
+        'artist' => $data['artist'],
+        'image' => $image,
+        'spotify_url' => $data['spotifyUrl'],
+        'shopify_url' => 'https://www.albumtagz.com/products/' . $product['handle'],
+        'delete_at' => now()->addMinutes(15),
+        'product_type' => $this->getProductType()
+    ]);
 
-            $product = $shopify->createProduct([
-            
+    return response()->json(new AlbumResource($album));
+}
 
-                'title' => "{$data['title']} Albumtag",
-                'vendor' => $data['artist'],
-                'product_type' => 'Music',
-                'status' => 'active',
-                'handle' => $handle,
-                'body_html' => "<p>Artist: {$data['artist']}</p><p>Spotify URL: {$data['spotifyUrl']}</p>",
-                'variants' => [
-                    [
-                        'price' => "14.95",
-                        'compare_at_price' => "19.95",
-                        'requires_shipping' => true,
-                        'inventory_management' => null,
-                    ]
-                ],
-                'images' => [
-                    [
-                        'src' => $image,
-                        'filename' => 'mockup_' . $handle . '.jpg'
-                    ]
-                ]
-            ]);
-             \Log::info('Created Shopify product:', $product);
-            $variantId = $product['variants'][0]['id'] ?? null;
-
-            if (!$variantId) {
-                return response()->json(['message' => 'Shopify product created without variant ID'], 500);
-            }
-
-            // Store locally
-            $album = Album::create([
-                'shopify_id' => $product['id'],
-                'title' => $data['title'],
-                'artist' => $data['artist'],
-                'image' => $image,
-                'spotify_url' => $data['spotifyUrl'],
-                'shopify_url' => 'https://www.albumtagz.com/products/' . $product['handle'],
-                'variant_id' => $variantId,
-                'delete_at' => now()->addMinutes(15),
-                'product_type' => $this->getProductType(),
-            ]);
 
          
 return (new AlbumResource($album))->response();

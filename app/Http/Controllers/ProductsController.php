@@ -30,7 +30,7 @@ class ProductsController extends Controller
             if ($existingProduct) {
                 $existingProduct->delete_at = now()->addMinutes(15);
                 $existingProduct->save();
-                return new AlbumResource($existingProduct);
+               return (new AlbumResource($existingProduct))->response();
             }
 
             // Create it at Shopify
@@ -85,7 +85,7 @@ class ProductsController extends Controller
                 'product_type' => $this->getProductType(),
             ]);
 
-            return new AlbumResource($album);
+          return (new AlbumResource($album))->response();
         } catch (\Throwable $e) {
             return response()->json([
                 'message' => $e->getMessage(),

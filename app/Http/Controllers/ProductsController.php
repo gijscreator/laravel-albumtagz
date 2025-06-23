@@ -30,7 +30,7 @@ class ProductsController extends Controller
             if ($existingProduct) {
                 $existingProduct->delete_at = now()->addMinutes(15);
                 $existingProduct->save();
-               return (new AlbumResource($existingProduct))->response();
+               return response()->json(new AlbumResource($album));
             }
 
             // Create it at Shopify
@@ -44,7 +44,7 @@ class ProductsController extends Controller
             $image = 'https://dtchdesign.nl/create-product/img.php?albumImg=' . urlencode($data['image']);
 
             $product = $shopify->createProduct([
-            \Log::info('Created Shopify product:', $product);
+            
 
                 'title' => "{$data['title']} Albumtag",
                 'vendor' => $data['artist'],
@@ -67,7 +67,7 @@ class ProductsController extends Controller
                     ]
                 ]
             ]);
-
+             \Log::info('Created Shopify product:', $product);
             $variantId = $product['variants'][0]['id'] ?? null;
 
             if (!$variantId) {
@@ -87,7 +87,7 @@ class ProductsController extends Controller
                 'product_type' => $this->getProductType(),
             ]);
 
-          \Log::info('Created album product:', $album->toArray());
+         
 return (new AlbumResource($album))->response();
 
         } catch (\Throwable $e) {

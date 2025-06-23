@@ -38,6 +38,7 @@ class Album extends Model
 {
     protected $fillable = [
         'shopify_id',
+        'variant_id',
         'title',
         'artist',
         'image',

@@ -8,25 +8,29 @@ use App\Http\Resources\AlbumResource;
 use App\Models\Album;
 use Illuminate\Support\Str;
 use Signifly\Shopify\Shopify;
-use Illuminate\Http\JsonResponse;
 
 class ProductsController extends Controller
 {
-public function store(ProductRequest $request): JsonResponse
-{
-    try {
+    public function getProductType(): string
+    {
+        return 'albumtag';
+    }
+
+    public function store(ProductRequest $request)
+    {
         $data = $request->validated();
 
-        $existingProduct = Album::whereProductType($this->getProductType())
-            ->whereSpotifyUrl($data['spotifyUrl'])
+        // Check if product already exists
+        $existingProduct = Album::whereProductType($this->getProductType())->whereSpotifyUrl($data['spotifyUrl'])
             ->first();
 
         if ($existingProduct) {
             $existingProduct->delete_at = now()->addMinutes(15);
             $existingProduct->save();
-            return response()->json(new AlbumResource($existingProduct));
+            return new AlbumResource($existingProduct);
         }
 
+        // Create it at spotify
         $shopify = new Shopify(
             config('albumtagz.shop_access_code'),
             config('albumtagz.shop_url'),
@@ -36,34 +40,34 @@ public function store(ProductRequest $request): JsonResponse
         $handle = Str::slug($data['title'] . '-' . $data['artist']);
         $image = 'https://dtchdesign.nl/create-product/img.php?albumImg=' . urlencode($data['image']);
 
-        $product = $shopify->createProduct([
-            'title' => "{$data['title']} Albumtag",
-            'vendor' => $data['artist'],
-            'product_type' => 'Music',
-            'status' => 'active',
-            'handle' => $handle,
-            'body_html' => "<p>Artist: {$data['artist']}</p><p>Spotify URL: {$data['spotifyUrl']}</p>",
-            'variants' => [
-                [
-                    'price' => "14.95",
-                    'compare_at_price' => "19.95",
-                    'requires_shipping' => true,
-                    'inventory_management' => null,
-                ]
-            ],
-            'images' => [
-                [
-                    'src' => $image,
-                    'filename' => 'mockup_' . $handle . '.jpg'
+        $product = $shopify->createProduct(
+            [
+                'title' => "{$data['title']} Albumtag",
+                'vendor' => $data['artist'],
+                'product_type' => 'Music',
+                'status' => 'active',
+                'handle' => Str::slug($data['title'] . '-' . $data['artist']),
+                'body_html' => "<p>Artist: {$data['artist']}</p><p>Spotify URL: {$data['spotifyUrl']}</p>",
+                'variants' => [
+                    [
+                        'price' => "14.95",
+                        'compare_at_price' => "19.95",
+                        'requires_shipping' => true,
+                        'inventory_management' => null,
+                    ]
+                ],
+                'images' => [
+                    [
+                        'src' => $image,
+                        'filename' => 'mockup_' . $handle . '.jpg'
+                    ]
                 ]
             ]
-        ]);
+        );
 
-        $variantId = $product['variants'][0]['id'] ?? null;
-
+        // Create it in our database
         $album = Album::create([
             'shopify_id' => $product['id'],
-            'variant_id' => $variantId,
             'title' => $data['title'],
             'artist' => $data['artist'],
             'image' => $image,
@@ -73,24 +77,16 @@ public function store(ProductRequest $request): JsonResponse
             'product_type' => $this->getProductType()
         ]);
 
-        return response()->json(new AlbumResource($album));
-
-    } catch (\Throwable $e) {
-        return response()->json([
-            'message' => $e->getMessage(),
-            'file' => $e->getFile(),
-            'line' => $e->getLine(),
-        ], 500);
+        return new AlbumResource($album);
     }
-}
 
-
-    public function keep(KeepRequest $request): JsonResponse
+    public function keep(KeepRequest $request)
     {
         $album = Album::whereSpotifyUrl($request->validated()['spotifyUrl'])
             ->firstOrFail();
 
         $album->delete_at = now()->addHours(24);
+
         $album->save();
 
         return response()->json([

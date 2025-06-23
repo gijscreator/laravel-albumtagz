@@ -85,7 +85,9 @@ class ProductsController extends Controller
                 'product_type' => $this->getProductType(),
             ]);
 
-          return (new AlbumResource($album))->response();
+          \Log::info('Created album product:', $album->toArray());
+return (new AlbumResource($album))->response();
+
         } catch (\Throwable $e) {
             return response()->json([
                 'message' => $e->getMessage(),

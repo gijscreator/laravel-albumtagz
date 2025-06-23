@@ -44,6 +44,8 @@ class ProductsController extends Controller
             $image = 'https://dtchdesign.nl/create-product/img.php?albumImg=' . urlencode($data['image']);
 
             $product = $shopify->createProduct([
+            \Log::info('Created Shopify product:', $product);
+
                 'title' => "{$data['title']} Albumtag",
                 'vendor' => $data['artist'],
                 'product_type' => 'Music',

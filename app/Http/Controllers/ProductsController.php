@@ -39,12 +39,6 @@ class ProductsController extends Controller
 
         $handle = Str::slug($data['title'] . '-' . $data['artist']);
         $image = 'https://dtchdesign.nl/create-product/img.php?albumImg=' . urlencode($data['image']);
-        $extraImages = [
-    'https://cdn.shopify.com/s/files/1/0879/3322/3247/files/157658741-1736330549.6145_9c547ecd-8170-4642-9c02-e9d24ebea80c.jpg?v=1747153522',
-    'https://cdn.shopify.com/s/files/1/0879/3322/3247/files/153447049-1733488256.21.jpg?v=1747153522',
-    'https://cdn.shopify.com/s/files/1/0879/3322/3247/files/157241906-1736073749.0085.jpg?v=1747153522',
-];
-
 $allImages = array_merge([
     [
         'src' => $image,

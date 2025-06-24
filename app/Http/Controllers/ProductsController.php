@@ -21,8 +21,7 @@ class ProductsController extends Controller
         $data = $request->validated();
 
         // Check if product already exists
-        $existingProduct = Album::whereProductType($this->getProductType())
-            ->whereSpotifyUrl($data['spotifyUrl'])
+        $existingProduct = Album::whereProductType($this->getProductType())->whereSpotifyUrl($data['spotifyUrl'])
             ->first();
 
         if ($existingProduct) {
@@ -31,7 +30,7 @@ class ProductsController extends Controller
             return new AlbumResource($existingProduct);
         }
 
-        // Create it at Shopify
+        // Create it at spotify
         $shopify = new Shopify(
             config('albumtagz.shop_access_code'),
             config('albumtagz.shop_url'),
@@ -41,35 +40,34 @@ class ProductsController extends Controller
         $handle = Str::slug($data['title'] . '-' . $data['artist']);
         $image = 'https://dtchdesign.nl/create-product/img.php?albumImg=' . urlencode($data['image']);
 
-        $product = $shopify->createProduct([
-            'title' => "{$data['title']} Albumtag",
-            'vendor' => $data['artist'],
-            'product_type' => 'Music',
-            'status' => 'active',
-            'handle' => $handle,
-            'body_html' => "<p>Artist: {$data['artist']}</p><p>Spotify URL: {$data['spotifyUrl']}</p>",
-            'variants' => [
-                [
-                    'price' => "14.95",
-                    'compare_at_price' => "19.95",
-                    'requires_shipping' => true,
-                    'inventory_management' => null,
-                ]
-            ],
-            'images' => [
-                [
-                    'src' => $image,
-                    'filename' => 'mockup_' . $handle . '.jpg'
+        $product = $shopify->createProduct(
+            [
+                'title' => "{$data['title']} Albumtag",
+                'vendor' => $data['artist'],
+                'product_type' => 'Music',
+                'status' => 'active',
+                'handle' => Str::slug($data['title'] . '-' . $data['artist']),
+                'body_html' => "<p>Artist: {$data['artist']}</p><p>Spotify URL: {$data['spotifyUrl']}</p>",
+                'variants' => [
+                    [
+                        'price' => "14.95",
+                        'compare_at_price' => "19.95",
+                        'requires_shipping' => true,
+                        'inventory_management' => null,
+                    ]
+                ],
+                'images' => [
+                    [
+                        'src' => $image,
+                        'filename' => 'mockup_' . $handle . '.jpg'
+                    ]
                 ]
             ]
-        ]);
-
-        $variantId = $product['variants'][0]['id'] ?? null;
+        );
 
         // Create it in our database
         $album = Album::create([
             'shopify_id' => $product['id'],
-            'variant_id' => $product['variants'][0]['id'] ?? null,
             'title' => $data['title'],
             'artist' => $data['artist'],
             'image' => $image,
@@ -88,6 +86,7 @@ class ProductsController extends Controller
             ->firstOrFail();
 
         $album->delete_at = now()->addHours(24);
+
         $album->save();
 
         return response()->json([

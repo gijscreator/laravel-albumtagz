@@ -22,7 +22,7 @@ class DeleteProductsCommand extends Command implements Isolatable
             config('albumtagz.shop_api_version')
         );
 
-        $products = Album::where('delete_at', '<=', now())->limit(80)->get();
+        $products = Album::where('delete_at', '<', now())->limit(80)->get();
 
         // Delete from shopify
         foreach ($products as $product) {

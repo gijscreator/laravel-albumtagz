@@ -25,6 +25,6 @@ return Application::configure(basePath: dirname(__DIR__))
     })->withSchedule(
         function (Schedule $schedule) {
             $schedule->command(DeleteProductsCommand::class)->everyTwoMinutes();
-            $schedule->command(KeepProductsForOrderCommnad::class)->dailyAt('01:00');
+            $schedule->command(KeepProductsForOrderCommnad::class)->everyFiveMinutes();
         }
     )->create();

@@ -20,11 +20,12 @@ return [
     'allowed_methods' => ['*'],
 
     'allowed_origins' => [
-    'https://www.albumtagz.com',
-    'https://albumtagz.com',
-    'https://albumtagz-flow-builder.lovable.app',
-    'https://create.albumtagz.com',
-    'http://127.0.0.1:3002' // indien zonder www ook gebruikt
+        'https://www.albumtagz.com',
+        'https://albumtagz.com',
+        'https://albumtagz-flow-builder.lovable.app',
+        'https://745b68-a1.myshopify.com',
+        'https://create.albumtagz.com',
+        'http://127.0.0.1:3002' // indien zonder www ook gebruikt
      ],
 
 

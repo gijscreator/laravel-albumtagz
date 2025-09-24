@@ -2,41 +2,40 @@
 
 return [
 
-    /*
-    |--------------------------------------------------------------------------
-    | Cross-Origin Resource Sharing (CORS) Configuration
-    |--------------------------------------------------------------------------
-    |
-    | Here you may configure your settings for cross-origin resource sharing
-    | or "CORS". This determines what cross-origin operations may execute
-    | in web browsers. You are free to adjust these settings as needed.
-    |
-    | To learn more: https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
-    |
-    */
-
     'paths' => ['api/*', 'sanctum/csrf-cookie'],
 
+    // Allow all methods (GET/POST/OPTIONS are needed)
     'allowed_methods' => ['*'],
 
+    // Exact origins you use in production
     'allowed_origins' => [
         'https://www.albumtagz.com',
         'https://albumtagz.com',
-        'https://albumtagz-flow-builder.lovable.app',
-        'https://745b68-a1.myshopify.com',
         'https://create.albumtagz.com',
-        'http://127.0.0.1:3002' // indien zonder www ook gebruikt
-     ],
+        // add any custom storefront host you actually use, e.g.:
+        // 'https://shop.albumtagz.com',
+        'https://745b68-a1.myshopify.com',
+        // local/dev:
+        'http://127.0.0.1:3002',
+    ],
 
+    // Wildcard patterns (useful if your myshopify subdomain might change)
+    'allowed_origins_patterns' => [
+        // allow any myshopify storefront subdomain
+        '^https:\/\/[a-z0-9-]+\.myshopify\.com$',
+        // optional: allow any subdomain of albumtagz.com (e.g., staging)
+        '^https:\/\/([a-z0-9-]+\.)?albumtagz\.com$',
+    ],
 
-    'allowed_origins_patterns' => [],
-
+    // Headers — keep '*' so custom 'Api-Key' is accepted
     'allowed_headers' => ['*'],
 
+    // If you don’t need to read custom response headers, leave empty
     'exposed_headers' => [],
 
-    'max_age' => 0,
+    // Cache preflight for a day (seconds)
+    'max_age' => 86400,
 
+    // You’re using an Api-Key header, not cookies — leave this false
     'supports_credentials' => false,
-
 ];

@@ -60,7 +60,7 @@ class ProductsController extends Controller
             'images'      => [
                 [
                     'src'      => $image,
-                    'filename' => 'mockup_' . $handle . '.jpg',
+                    'filename' => 'mockup_' . $handle . '.png',
                 ],
             ],
         ]);

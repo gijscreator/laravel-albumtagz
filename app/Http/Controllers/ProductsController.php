@@ -42,23 +42,65 @@ class ProductsController extends Controller
         $handle = Str::slug($data['title'] . '-' . $data['artist']);
 
         /**
-         * Build a UNIQUE compositor URL (+ warm it) so Shopify’s importer
-         * always fetches a fresh file and doesn’t get a 304.
+         * Build a UNIQUE compositor URL so we always fetch a fresh render.
          */
         $cacheBuster = $data['id'] ?? ($data['spotifyUrl'] ?? '') ?: (string) Str::uuid();
-        $image = 'https://dtchdesign.nl/create-product/img.php?albumImg='
-               . urlencode($data['image'])
-               . '&v=' . rawurlencode($cacheBuster);
+        $imageUrl = 'https://dtchdesign.nl/create-product/img.php?albumImg='
+                  . urlencode($data['image'])
+                  . '&v=' . rawurlencode($cacheBuster);
 
-        // Warm the compositor cache so Shopify’s fetch is instant
+        // --- Fetch compositor bytes
+        $imgBytes = null;
         try {
             $ctx = stream_context_create(['http' => ['timeout' => 8]]);
-            @file_get_contents($image, false, $ctx);
+            $imgBytes = @file_get_contents($imageUrl, false, $ctx);
         } catch (\Throwable $e) {
-            // Non-fatal: Shopify will still try to fetch the image.
+            // ignore, we'll handle null below
         }
 
-        // Create the product (use .png filename to match compositor output)
+        if (!$imgBytes || strlen($imgBytes) < 64) {
+            return response()->json(['message' => 'Unable to fetch album image.'], 422);
+        }
+
+        // --- Try converting to WEBP (fallback to original if conversion not available)
+        $payloadBytes = $imgBytes;
+        $filename = 'mockup_' . $handle . '.webp';
+
+        try {
+            if (function_exists('imagewebp')) {
+                $im = @imagecreatefromstring($imgBytes);
+                if ($im !== false) {
+                    // Ensure truecolor + alpha preserved before encoding
+                    if (function_exists('imagepalettetotruecolor')) {
+                        @imagepalettetotruecolor($im);
+                    }
+                    @imagealphablending($im, true);
+                    @imagesavealpha($im, true);
+
+                    ob_start();
+                    // quality 90 (0 worst - 100 best)
+                    @imagewebp($im, null, 90);
+                    $webp = ob_get_clean();
+                    @imagedestroy($im);
+
+                    if ($webp && strlen($webp) > 64) {
+                        $payloadBytes = $webp; // use WEBP
+                    } else {
+                        $filename = 'mockup_' . $handle . '.png'; // fallback filename
+                    }
+                } else {
+                    $filename = 'mockup_' . $handle . '.png';
+                }
+            } else {
+                // GD lacks WEBP support; fallback
+                $filename = 'mockup_' . $handle . '.png';
+            }
+        } catch (\Throwable $e) {
+            // Conversion failed; fallback to original bytes
+            $filename = 'mockup_' . $handle . '.png';
+        }
+
+        // --- Create the product WITHOUT images (avoid duplicate uploads)
         $product = $shopify->createProduct([
             'title'        => "{$data['title']} Albumtag",
             'vendor'       => $data['artist'],
@@ -66,44 +108,33 @@ class ProductsController extends Controller
             'status'       => 'active',
             'handle'       => $handle,
             'body_html'    => "<p>Artist: {$data['artist']}</p><p>Spotify URL: {$data['spotifyUrl']}</p>",
-            'variants'     => [
-                [
-                    'price'                => "14.95",
-                    'compare_at_price'     => "19.95",
-                    'requires_shipping'    => true,
-                    'inventory_management' => null,
-                ],
-            ],
-            'images'       => [
-                [
-                    'src'      => $image,
-                    'filename' => 'mockup_' . $handle . '.png',
-                ],
-            ],
+            'variants'     => [[
+                'price'                => "14.95",
+                'compare_at_price'     => "19.95",
+                'requires_shipping'    => true,
+                'inventory_management' => null,
+            ]],
+            // IMPORTANT: no 'images' here — we attach exactly once below
         ]);
 
-        /**
-         * Bulletproof fallback: if Shopify skipped importing the remote image,
-         * attach it directly as a base64 "attachment" so the product always has an image.
-         */
+        // --- Attach exactly one image (WEBP if available, otherwise PNG/original)
         try {
-            $pngBytes = @file_get_contents($image);
-            if ($pngBytes && strlen($pngBytes) > 64) {
-                $shopify->createProductImage($product['id'], [
-                    'attachment' => base64_encode($pngBytes),
-                    'filename'   => 'mockup_' . $handle . '.png',
-                ]);
-            }
+            $shopify->createProductImage($product['id'], [
+                'attachment' => base64_encode($payloadBytes),
+                'filename'   => $filename,
+                // optional: 'alt' => "{$data['title']} by {$data['artist']}",
+                // optional: 'position' => 1,
+            ]);
         } catch (\Throwable $e) {
-            // Ignore: the product exists; image can be reattached later if needed.
+            // If this fails, the product still exists; you can retry later.
         }
 
-        // Save in our database
+        // Save in our database (store compositor URL for traceability)
         $album = Album::create([
             'shopify_id'   => $product['id'],
             'title'        => $data['title'],
             'artist'       => $data['artist'],
-            'image'        => $image, // stores the compositor URL (with cache-buster)
+            'image'        => $imageUrl,
             'spotify_url'  => $data['spotifyUrl'],
             'shopify_url'  => 'https://www.albumtagz.com/products/' . $product['handle'],
             'delete_at'    => now()->addMinutes(15),

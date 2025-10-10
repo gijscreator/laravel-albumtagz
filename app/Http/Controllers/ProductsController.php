@@ -109,8 +109,8 @@ class ProductsController extends Controller
             'handle'       => $handle,
             'body_html'    => "<p>Artist: {$data['artist']}</p><p>Spotify URL: {$data['spotifyUrl']}</p>",
             'variants'     => [[
-                'price'                => "19.95",
-                'compare_at_price'     => "24.95",
+                'price'                => "14.95",
+                'compare_at_price'     => "19.95",
                 'requires_shipping'    => true,
                 'inventory_management' => null,
             ]],

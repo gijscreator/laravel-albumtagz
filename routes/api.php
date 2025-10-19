@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Controllers\ProductsController;
-use App\Http\Controllers\productsControllerAirvinylrefill;
+use App\Http\Controllers\ProductsControllerAirvinylrefill;
 use App\Http\Controllers\ProductsControllerAirvinyls;
 use App\Http\Controllers\SearchController;
 
@@ -11,4 +11,5 @@ Route::post('/products/airvinylrefill', [ProductsControllerAirvinylrefill::class
 Route::post('/products/keep', [ProductsController::class, 'keep']);
 Route::get('/search', [SearchController::class, 'search']);
 
-
+// 🆕 New custom keychain route
+Route::post('/products/keychains', [ProductsController::class, 'storeKeychain']);

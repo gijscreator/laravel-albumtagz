@@ -6,6 +6,7 @@ use App\Http\Requests\KeepRequest;
 use App\Http\Requests\ProductRequest;
 use App\Http\Resources\AlbumResource;
 use App\Models\Album;
+use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Signifly\Shopify\Shopify;
 
@@ -153,6 +154,81 @@ class ProductsController extends Controller
 
         return response()->json([
             'message' => 'Album kept longer!',
+        ]);
+    }
+
+    // 🔽🔽🔽  NEW CUSTOM KEYCHAIN METHOD  🔽🔽🔽
+    public function storeKeychain(Request $request)
+    {
+        $data = $request->validate([
+            'album.title'      => 'required|string|max:255',
+            'album.artist'     => 'required|string|max:255',
+            'album.spotifyUrl' => 'nullable|string|max:255',
+            'uploadedImages'   => 'required|array|min:1',
+            'uploadedImages.*' => 'string',
+            'customerId'       => 'nullable|string',
+        ]);
+
+        $album      = $data['album'];
+        $images     = $data['uploadedImages'];
+        $customerId = $data['customerId'] ?? 'guest';
+
+        $shopify = new Shopify(
+            config('albumtagz.shop_access_code'),
+            config('albumtagz.shop_url'),
+            config('albumtagz.shop_api_version')
+        );
+
+        $handle = Str::slug($album['title'] . '-' . $album['artist'] . '-keychain');
+
+        $product = $shopify->createProduct([
+            'title'        => "{$album['title']} Custom Keychain",
+            'vendor'       => $album['artist'],
+            'product_type' => 'Custom Keychain',
+            'status'       => 'draft',
+            'handle'       => $handle,
+            'tags'         => 'custom,keychain,private',
+            'body_html'    => "<p>Personalized keychain for {$album['artist']}.</p>",
+            'variants'     => [[
+                'price'                => "19.95",
+                'compare_at_price'     => "24.95",
+                'requires_shipping'    => true,
+                'inventory_management' => null,
+            ]],
+        ]);
+
+        foreach ($images as $idx => $img) {
+            try {
+                $attachment = str_starts_with($img, 'data:image')
+                    ? preg_replace('#^data:image/\w+;base64,#i', '', $img)
+                    : base64_encode(file_get_contents($img));
+
+                $shopify->createProductImage($product['id'], [
+                    'attachment' => $attachment,
+                    'filename'   => "keychain_{$idx}.png",
+                    'position'   => $idx + 1,
+                ]);
+            } catch (\Throwable $e) {
+                // ignore upload failure
+            }
+        }
+
+        $albumRecord = Album::create([
+            'shopify_id'   => $product['id'],
+            'title'        => $album['title'],
+            'artist'       => $album['artist'],
+            'image'        => $images[0] ?? null,
+            'spotify_url'  => $album['spotifyUrl'] ?? null,
+            'shopify_url'  => 'https://www.albumtagz.com/products/' . $product['handle'],
+            'delete_at'    => now()->addHours(12),
+            'product_type' => 'keychain',
+        ]);
+
+        return response()->json([
+            'success'     => true,
+            'productId'   => $product['id'],
+            'productUrl'  => $albumRecord->shopify_url,
+            'localRecord' => new AlbumResource($albumRecord),
         ]);
     }
 }

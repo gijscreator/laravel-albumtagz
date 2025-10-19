@@ -17,6 +17,9 @@ class ProductsController extends Controller
         return 'albumtag';
     }
 
+    // ------------------------------------------------------------
+    // EXISTING ALBUMTAG STORE
+    // ------------------------------------------------------------
     public function store(ProductRequest $request)
     {
         $data = $request->validated();
@@ -42,9 +45,7 @@ class ProductsController extends Controller
 
         $handle = Str::slug($data['title'] . '-' . $data['artist']);
 
-        /**
-         * Build a UNIQUE compositor URL so we always fetch a fresh render.
-         */
+        // --- Build compositor URL for album image
         $cacheBuster = $data['id'] ?? ($data['spotifyUrl'] ?? '') ?: (string) Str::uuid();
         $imageUrl = 'https://dtchdesign.nl/create-product/img.php?albumImg='
                   . urlencode($data['image'])
@@ -56,14 +57,14 @@ class ProductsController extends Controller
             $ctx = stream_context_create(['http' => ['timeout' => 8]]);
             $imgBytes = @file_get_contents($imageUrl, false, $ctx);
         } catch (\Throwable $e) {
-            // ignore, we'll handle null below
+            // ignore
         }
 
         if (!$imgBytes || strlen($imgBytes) < 64) {
             return response()->json(['message' => 'Unable to fetch album image.'], 422);
         }
 
-        // --- Try converting to WEBP (fallback to original if conversion not available)
+        // --- Try converting to WEBP
         $payloadBytes = $imgBytes;
         $filename = 'mockup_' . $handle . '.webp';
 
@@ -71,7 +72,6 @@ class ProductsController extends Controller
             if (function_exists('imagewebp')) {
                 $im = @imagecreatefromstring($imgBytes);
                 if ($im !== false) {
-                    // Ensure truecolor + alpha preserved before encoding
                     if (function_exists('imagepalettetotruecolor')) {
                         @imagepalettetotruecolor($im);
                     }
@@ -79,29 +79,26 @@ class ProductsController extends Controller
                     @imagesavealpha($im, true);
 
                     ob_start();
-                    // quality 90 (0 worst - 100 best)
                     @imagewebp($im, null, 90);
                     $webp = ob_get_clean();
                     @imagedestroy($im);
 
                     if ($webp && strlen($webp) > 64) {
-                        $payloadBytes = $webp; // use WEBP
+                        $payloadBytes = $webp;
                     } else {
-                        $filename = 'mockup_' . $handle . '.png'; // fallback filename
+                        $filename = 'mockup_' . $handle . '.png';
                     }
                 } else {
                     $filename = 'mockup_' . $handle . '.png';
                 }
             } else {
-                // GD lacks WEBP support; fallback
                 $filename = 'mockup_' . $handle . '.png';
             }
         } catch (\Throwable $e) {
-            // Conversion failed; fallback to original bytes
             $filename = 'mockup_' . $handle . '.png';
         }
 
-        // --- Create the product WITHOUT images (avoid duplicate uploads)
+        // --- Create product on Shopify
         $product = $shopify->createProduct([
             'title'        => "{$data['title']} Albumtag",
             'vendor'       => $data['artist'],
@@ -115,22 +112,20 @@ class ProductsController extends Controller
                 'requires_shipping'    => true,
                 'inventory_management' => null,
             ]],
-            // IMPORTANT: no 'images' here — we attach exactly once below
         ]);
 
-        // --- Attach exactly one image (WEBP if available, otherwise PNG/original)
+        // --- Upload album mockup
         try {
             $shopify->createProductImage($product['id'], [
                 'attachment' => base64_encode($payloadBytes),
                 'filename'   => $filename,
-                // optional: 'alt' => "{$data['title']} by {$data['artist']}",
-                // optional: 'position' => 1,
+                'position'   => 1,
             ]);
         } catch (\Throwable $e) {
-            // If this fails, the product still exists; you can retry later.
+            \Log::error('Shopify album image upload failed: ' . $e->getMessage());
         }
 
-        // Save in our database (store compositor URL for traceability)
+        // --- Save record locally
         $album = Album::create([
             'shopify_id'   => $product['id'],
             'title'        => $data['title'],
@@ -145,6 +140,9 @@ class ProductsController extends Controller
         return new AlbumResource($album);
     }
 
+    // ------------------------------------------------------------
+    // KEEP EXISTING PRODUCT LONGER
+    // ------------------------------------------------------------
     public function keep(KeepRequest $request)
     {
         $album = Album::whereSpotifyUrl($request->validated()['spotifyUrl'])->firstOrFail();
@@ -152,12 +150,12 @@ class ProductsController extends Controller
         $album->delete_at = now()->addHours(24);
         $album->save();
 
-        return response()->json([
-            'message' => 'Album kept longer!',
-        ]);
+        return response()->json(['message' => 'Album kept longer!']);
     }
 
-    // 🔽🔽🔽  NEW CUSTOM KEYCHAIN METHOD  🔽🔽🔽
+    // ------------------------------------------------------------
+    // 🧩 NEW: CUSTOM KEYCHAIN STORE
+    // ------------------------------------------------------------
     public function storeKeychain(Request $request)
     {
         $data = $request->validate([
@@ -173,6 +171,7 @@ class ProductsController extends Controller
         $images     = $data['uploadedImages'];
         $customerId = $data['customerId'] ?? 'guest';
 
+        // --- Shopify client
         $shopify = new Shopify(
             config('albumtagz.shop_access_code'),
             config('albumtagz.shop_url'),
@@ -181,6 +180,7 @@ class ProductsController extends Controller
 
         $handle = Str::slug($album['title'] . '-' . $album['artist'] . '-keychain');
 
+        // --- Create Shopify product
         $product = $shopify->createProduct([
             'title'        => "{$album['title']} Custom Keychain",
             'vendor'       => $album['artist'],
@@ -197,6 +197,37 @@ class ProductsController extends Controller
             ]],
         ]);
 
+        // --- Generate compositor mockup
+        $mockupUrl = 'https://dtchdesign.nl/create-product/img.php?mode=keychain';
+        foreach (['front','inner_left','inner_right','disc','back'] as $i => $key) {
+            if (!empty($images[$i])) {
+                $mockupUrl .= '&' . $key . '=' . urlencode($images[$i]);
+            }
+        }
+
+        $imgBytes = null;
+        try {
+            $ctx = stream_context_create(['http' => ['timeout' => 10]]);
+            $imgBytes = @file_get_contents($mockupUrl, false, $ctx);
+        } catch (\Throwable $e) {
+            \Log::warning('Failed to fetch keychain mockup: ' . $e->getMessage());
+        }
+
+        if ($imgBytes && strlen($imgBytes) > 64) {
+            try {
+                $shopify->createProductImage($product['id'], [
+                    'attachment' => base64_encode($imgBytes),
+                    'filename'   => 'keychain_mockup.webp',
+                    'position'   => 1,
+                ]);
+            } catch (\Throwable $e) {
+                \Log::error('Shopify mockup upload failed: ' . $e->getMessage());
+            }
+        } else {
+            \Log::warning('Mockup not generated or empty: ' . $mockupUrl);
+        }
+
+        // --- Upload each user-provided image (optional)
         foreach ($images as $idx => $img) {
             try {
                 $attachment = str_starts_with($img, 'data:image')
@@ -206,13 +237,14 @@ class ProductsController extends Controller
                 $shopify->createProductImage($product['id'], [
                     'attachment' => $attachment,
                     'filename'   => "keychain_{$idx}.png",
-                    'position'   => $idx + 1,
+                    'position'   => $idx + 2, // after mockup
                 ]);
             } catch (\Throwable $e) {
-                // ignore upload failure
+                \Log::warning("Failed to upload user image {$idx}: " . $e->getMessage());
             }
         }
 
+        // --- Save local record
         $albumRecord = Album::create([
             'shopify_id'   => $product['id'],
             'title'        => $album['title'],

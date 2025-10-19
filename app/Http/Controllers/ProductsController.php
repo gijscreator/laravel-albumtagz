@@ -18,7 +18,7 @@ class ProductsController extends Controller
     }
 
     // ------------------------------------------------------------
-    // EXISTING ALBUMTAG STORE
+    // ALBUMTAG PRODUCT CREATION (existing)
     // ------------------------------------------------------------
     public function store(ProductRequest $request)
     {
@@ -146,7 +146,6 @@ class ProductsController extends Controller
     public function keep(KeepRequest $request)
     {
         $album = Album::whereSpotifyUrl($request->validated()['spotifyUrl'])->firstOrFail();
-
         $album->delete_at = now()->addHours(24);
         $album->save();
 
@@ -154,7 +153,7 @@ class ProductsController extends Controller
     }
 
     // ------------------------------------------------------------
-    // 🧩 NEW: CUSTOM KEYCHAIN STORE
+    // CUSTOM KEYCHAIN PRODUCT CREATION
     // ------------------------------------------------------------
     public function storeKeychain(Request $request)
     {
@@ -180,16 +179,17 @@ class ProductsController extends Controller
 
         $handle = Str::slug($album['title'] . '-' . $album['artist'] . '-keychain');
 
-        // --- Create Shopify product
+        // --- Create Shopify product (ACTIVE but hidden)
         $product = $shopify->createProduct([
-            'title'        => "{$album['title']} Custom Keychain",
-            'vendor'       => $album['artist'],
-            'product_type' => 'Custom Keychain',
-            'status'       => 'draft',
-            'handle'       => $handle,
-            'tags'         => 'custom,keychain,private',
-            'body_html'    => "<p>Personalized keychain for {$album['artist']}.</p>",
-            'variants'     => [[
+            'title'           => "{$album['title']} Custom Keychain",
+            'vendor'          => $album['artist'],
+            'product_type'    => 'Custom Keychain',
+            'status'          => 'active',        // ✅ product is live
+            'published_scope' => 'none',          // 🚫 hidden from collections
+            'handle'          => $handle,
+            'tags'            => 'custom,keychain,private',
+            'body_html'       => "<p>Personalized keychain for {$album['artist']}.</p>",
+            'variants'        => [[
                 'price'                => "19.95",
                 'compare_at_price'     => "24.95",
                 'requires_shipping'    => true,
@@ -227,7 +227,7 @@ class ProductsController extends Controller
             \Log::warning('Mockup not generated or empty: ' . $mockupUrl);
         }
 
-        // --- Upload each user-provided image (optional)
+        // --- Upload user-provided images (optional)
         foreach ($images as $idx => $img) {
             try {
                 $attachment = str_starts_with($img, 'data:image')
@@ -237,7 +237,7 @@ class ProductsController extends Controller
                 $shopify->createProductImage($product['id'], [
                     'attachment' => $attachment,
                     'filename'   => "keychain_{$idx}.png",
-                    'position'   => $idx + 2, // after mockup
+                    'position'   => $idx + 2,
                 ]);
             } catch (\Throwable $e) {
                 \Log::warning("Failed to upload user image {$idx}: " . $e->getMessage());

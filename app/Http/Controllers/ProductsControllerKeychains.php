@@ -7,7 +7,7 @@ public function storeKeychain(Request $request)
             'album.artist'     => 'required|string|max:255',
             'album.spotifyUrl' => 'nullable|string|max:255',
             'uploadedImages'   => 'required|array|min:1',
-            'uploadedImages.*' => 'string',
+            'uploadedImages.*' => 'string', // Frontend now sends clean base64 string, this is fine
             'customerId'       => 'nullable|string',
         ]);
 
@@ -45,7 +45,9 @@ public function storeKeychain(Request $request)
         $mockupUrl = 'https://dtchdesign.nl/create-product/img.php?mode=keychain';
         foreach (['front','inner_left','inner_right','disc','back'] as $i => $key) {
             if (!empty($images[$i])) {
-                $mockupUrl .= '&' . $key . '=' . urlencode($images[$i]);
+                // 💡 FIX 1: Re-add the data URI prefix for the external mockup service
+                $fullDataUri = 'data:image/jpeg;base64,' . $images[$i];
+                $mockupUrl .= '&' . $key . '=' . urlencode($fullDataUri);
             }
         }
 
@@ -75,14 +77,15 @@ public function storeKeychain(Request $request)
         // ✅ Upload each user image safely (ignore broken base64)
         foreach ($images as $idx => $img) {
             try {
-                if (str_starts_with($img, 'data:image')) {
-                    $attachment = preg_replace('#^data:image/\w+;base64,#i', '', $img);
-                } else {
-                    $attachment = base64_encode(@file_get_contents($img));
-                }
+                // 💡 FIX 2: Replace spaces with '+' for Base64 decoding safety
+                $attachment = str_replace(' ', '+', $img);
+                
+                // Since frontend is sending raw Base64 string, we no longer need the
+                // data URI checks/stripping or the file_get_contents logic.
 
                 if (strlen($attachment) > 100) {
                     $shopify->createProductImage($product['id'], [
+                        // $attachment is the raw Base64 string, which is correct for Shopify's attachment field
                         'attachment' => $attachment,
                         'filename'   => "keychain_{$idx}.png",
                         'position'   => $idx + 2,
@@ -108,8 +111,8 @@ public function storeKeychain(Request $request)
         ]);
 
         return response()->json([
-            'success'     => true,
-            'productId'   => $product['id'],
+            'success'   => true,
+            'productId' => $product['id'],
             'productUrl'  => $albumRecord->shopify_url,
             'localRecord' => new \App\Http\Resources\AlbumResource($albumRecord),
         ]);

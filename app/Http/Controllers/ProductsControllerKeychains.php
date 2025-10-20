@@ -1,172 +1,32 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers; // Ensure this namespace is correct
 
-use App\Http\Requests\KeepRequest;
-use App\Http\Requests\ProductRequest;
 use App\Http\Resources\AlbumResource;
-use App\Models\Album;
+use App\Models\Album; // Assuming your Album model is here
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Signifly\Shopify\Shopify;
+use Signifly\Shopify\Shopify; // Assuming you are using the Signifly package
 
-class ProductsController extends Controller
+// If this controller extends a Base Controller, ensure you update the line below
+class ProductsControllerKeychains extends Controller
 {
-    public function getProductType(): string
-    {
-        return 'albumtag';
-    }
-
-    // ------------------------------------------------------------
-    // ALBUMTAG PRODUCT CREATION (existing)
-    // ------------------------------------------------------------
-    public function store(ProductRequest $request)
-    {
-        // ... (Existing working code for 'store' method remains here)
-        $data = $request->validated();
-
-        // Check if product already exists
-        $existingProduct = Album::whereProductType($this->getProductType())
-            ->whereSpotifyUrl($data['spotifyUrl'])
-            ->first();
-
-        if ($existingProduct) {
-            $existingProduct->delete_at = now()->addMinutes(15);
-            $existingProduct->save();
-
-            return new AlbumResource($existingProduct);
-        }
-
-        // Shopify client
-        $shopify = new Shopify(
-            config('albumtagz.shop_access_code'),
-            config('albumtagz.shop_url'),
-            config('albumtagz.shop_api_version')
-        );
-
-        $handle = Str::slug($data['title'] . '-' . $data['artist']);
-
-        // --- Build compositor URL for album image
-        $cacheBuster = $data['id'] ?? ($data['spotifyUrl'] ?? '') ?: (string) Str::uuid();
-        $imageUrl = 'https://dtchdesign.nl/create-product/img.php?albumImg='
-                     . urlencode($data['image'])
-                     . '&v=' . rawurlencode($cacheBuster);
-
-        // --- Fetch compositor bytes
-        $imgBytes = null;
-        try {
-            $ctx = stream_context_create(['http' => ['timeout' => 8]]);
-            $imgBytes = @file_get_contents($imageUrl, false, $ctx);
-        } catch (\Throwable $e) {
-            // ignore
-        }
-
-        if (!$imgBytes || strlen($imgBytes) < 64) {
-            return response()->json(['message' => 'Unable to fetch album image.'], 422);
-        }
-
-        // --- Try converting to WEBP
-        $payloadBytes = $imgBytes;
-        $filename = 'mockup_' . $handle . '.webp';
-
-        try {
-            if (function_exists('imagewebp')) {
-                $im = @imagecreatefromstring($imgBytes);
-                if ($im !== false) {
-                    if (function_exists('imagepalettetotruecolor')) {
-                        @imagepalettetotruecolor($im);
-                    }
-                    @imagealphablending($im, true);
-                    @imagesavealpha($im, true);
-
-                    ob_start();
-                    @imagewebp($im, null, 90);
-                    $webp = ob_get_clean();
-                    @imagedestroy($im);
-
-                    if ($webp && strlen($webp) > 64) {
-                        $payloadBytes = $webp;
-                    } else {
-                        $filename = 'mockup_' . $handle . '.png';
-                    }
-                } else {
-                    $filename = 'mockup_' . $handle . '.png';
-                }
-            } else {
-                $filename = 'mockup_' . $handle . '.png';
-            }
-        } catch (\Throwable $e) {
-            $filename = 'mockup_' . $handle . '.png';
-        }
-
-        // --- Create product on Shopify
-        $product = $shopify->createProduct([
-            'title'        => "{$data['title']} Albumtag",
-            'vendor'       => $data['artist'],
-            'product_type' => 'Music',
-            'status'       => 'active',
-            'handle'       => $handle,
-            'body_html'    => "<p>Artist: {$data['artist']}</p><p>Spotify URL: {$data['spotifyUrl']}</p>",
-            'variants'     => [[
-                'price'              => "14.95",
-                'compare_at_price'   => "19.95",
-                'requires_shipping'  => true,
-                'inventory_management' => null,
-            ]],
-        ]);
-
-        // --- Upload album mockup
-        try {
-            $shopify->createProductImage($product['id'], [
-                'attachment' => base64_encode($payloadBytes),
-                'filename'   => $filename,
-                'position'   => 1,
-            ]);
-        } catch (\Throwable $e) {
-            \Log::error('Shopify album image upload failed: ' . $e->getMessage());
-        }
-
-        // --- Save record locally
-        $album = Album::create([
-            'shopify_id'   => $product['id'],
-            'title'        => $data['title'],
-            'artist'       => $data['artist'],
-            'image'        => $imageUrl,
-            'spotify_url'  => $data['spotifyUrl'],
-            'shopify_url'  => 'https://www.albumtagz.com/products/' . $product['handle'],
-            'delete_at'    => now()->addMinutes(15),
-            'product_type' => $this->getProductType(),
-        ]);
-
-        return new AlbumResource($album);
-    }
-
-    // ------------------------------------------------------------
-    // KEEP EXISTING PRODUCT LONGER
-    // ------------------------------------------------------------
-    public function keep(KeepRequest $request)
-    {
-        $album = Album::whereSpotifyUrl($request->validated()['spotifyUrl'])->firstOrFail();
-        $album->delete_at = now()->addHours(24);
-        $album->save();
-
-        return response()->json(['message' => 'Album kept longer!']);
-    }
-
-    // ------------------------------------------------------------
-    // CUSTOM KEYCHAIN PRODUCT CREATION
-    // ------------------------------------------------------------
+    /**
+     * Store a new custom keychain product on Shopify.
+     * * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function storeKeychain(Request $request)
     {
+        // 💡 CRITICAL FIX: Wrap all code to catch exceptions and ensure a 200/JSON response
         try {
             // ✅ Validate request safely
             $data = $request->validate([
                 'album.title'      => 'required|string|max:255',
                 'album.artist'     => 'required|string|max:255',
                 'album.spotifyUrl' => 'nullable|string|max:255',
-                // This validation is safe assuming the JS strips the prefix (best practice)
                 'uploadedImages'   => 'required|array|min:1', 
-                'uploadedImages.*' => 'string',
+                'uploadedImages.*' => 'string', // Should pass with cleaned Base64 from JS
                 'customerId'       => 'nullable|string',
             ]);
 
@@ -174,7 +34,7 @@ class ProductsController extends Controller
             $images     = $data['uploadedImages'];
             $customerId = $data['customerId'] ?? 'guest';
 
-            // --- Shopify client (This part already works, confirmed by 'store' method)
+            // --- Shopify client (Uses the working config from your other products)
             $shopify = new Shopify(
                 config('albumtagz.shop_access_code'),
                 config('albumtagz.shop_url'),
@@ -205,7 +65,7 @@ class ProductsController extends Controller
             $mockupUrl = 'https://dtchdesign.nl/create-product/img.php?mode=keychain';
             foreach (['front','inner_left','inner_right','disc','back'] as $i => $key) {
                 if (!empty($images[$i])) {
-                    // 💡 FIX 1: Add prefix back for external service, and safely replace space/plus
+                    // 💡 FIX 1: Restore '+' and add data URI prefix for external service
                     $imagePayload = str_replace(' ', '+', $images[$i]);
                     $fullDataUri = 'data:image/jpeg;base64,' . $imagePayload; 
                     $mockupUrl .= '&' . $key . '=' . urlencode($fullDataUri);
@@ -237,20 +97,12 @@ class ProductsController extends Controller
             // --- Upload user-provided images
             foreach ($images as $idx => $img) {
                 try {
-                    // 💡 FIX 2: Safely handle Base64 string that may have lost '+' signs
+                    // 💡 FIX 2: Restore '+' signs for Shopify API (required for valid Base64)
                     $attachment = str_replace(' ', '+', $img);
-                    
-                    // NOTE: This assumes the JS is sending the raw Base64 data (without the prefix)
-                    // If the JS is NOT stripping the prefix, you need to use the previous logic:
-                    /*
-                    $attachment = str_starts_with($img, 'data:image')
-                        ? preg_replace('#^data:image/\w+;base64,#i', '', $attachment)
-                        : $attachment; 
-                    */
                     
                     if (strlen($attachment) > 100) {
                         $shopify->createProductImage($product['id'], [
-                            'attachment' => $attachment,
+                            'attachment' => $attachment, // Clean, raw Base64 string
                             'filename'   => "keychain_{$idx}.png",
                             'position'   => $idx + 2,
                         ]);
@@ -281,8 +133,7 @@ class ProductsController extends Controller
                 'localRecord' => new AlbumResource($albumRecord),
             ]);
         } catch (\Throwable $e) {
-            // ✅ CRITICAL FIX: Catches any fatal error (including early validation failure) 
-            // and returns a JSON response instead of a 500 HTML page.
+            // ✅ Catches all exceptions (validation, runtime, etc.)
             \Log::error('Keychain create failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
 
             return response()->json([

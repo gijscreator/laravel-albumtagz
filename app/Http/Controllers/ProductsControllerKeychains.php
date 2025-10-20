@@ -18,15 +18,14 @@ class ProductsControllerKeychains extends Controller
      */
     public function storeKeychain(Request $request)
     {
-        // 💡 CRITICAL FIX: Wrap all code to catch exceptions and ensure a 200/JSON response
         try {
-            // ✅ Validate request safely
+            // ✅ Validation is still required, min:1 is now guaranteed to be enough
             $data = $request->validate([
                 'album.title'      => 'required|string|max:255',
                 'album.artist'     => 'required|string|max:255',
                 'album.spotifyUrl' => 'nullable|string|max:255',
-                'uploadedImages'   => 'required|array|min:1', 
-                'uploadedImages.*' => 'string', // Should pass with cleaned Base64 from JS
+                'uploadedImages'   => 'required|array|min:1', // Now only 1 image expected
+                'uploadedImages.*' => 'string',
                 'customerId'       => 'nullable|string',
             ]);
 
@@ -34,16 +33,16 @@ class ProductsControllerKeychains extends Controller
             $images     = $data['uploadedImages'];
             $customerId = $data['customerId'] ?? 'guest';
 
-            // --- Shopify client (Uses the working config from your other products)
-            $shopify = new Shopify(
+            // --- Shopify client
+            $shopify = new \Signifly\Shopify\Shopify(
                 config('albumtagz.shop_access_code'),
                 config('albumtagz.shop_url'),
                 config('albumtagz.shop_api_version')
             );
 
-            $handle = Str::slug($album['title'] . '-' . $album['artist'] . '-keychain');
-
-            // --- Create Shopify product (ACTIVE but hidden)
+            $handle = \Illuminate\Support\Str::slug($album['title'] . '-' . $album['artist'] . '-keychain');
+            
+            // --- Create Shopify product (Unchanged)
             $product = $shopify->createProduct([
                 'title'           => "{$album['title']} Custom Keychain",
                 'vendor'          => $album['artist'],
@@ -63,14 +62,19 @@ class ProductsControllerKeychains extends Controller
 
             // --- Generate compositor mockup
             $mockupUrl = 'https://dtchdesign.nl/create-product/img.php?mode=keychain';
-            foreach (['front','inner_left','inner_right','disc','back'] as $i => $key) {
-                if (!empty($images[$i])) {
-                    // 💡 FIX 1: Restore '+' and add data URI prefix for external service
-                    $imagePayload = str_replace(' ', '+', $images[$i]);
-                    $fullDataUri = 'data:image/jpeg;base64,' . $imagePayload; 
-                    $mockupUrl .= '&' . $key . '=' . urlencode($fullDataUri);
-                }
+            // 💡 CRITICAL CHANGE: Only use the first image for all parts of the mockup
+            $firstImage = $images[0] ?? null; 
+            
+            if ($firstImage) {
+                 $imagePayload = str_replace(' ', '+', $firstImage);
+                 $fullDataUri = 'data:image/jpeg;base64,' . $imagePayload; 
+                 
+                 // Use the first image for all required spots on the keychain mockup
+                 foreach (['front','inner_left','inner_right','disc','back'] as $key) {
+                     $mockupUrl .= '&' . $key . '=' . urlencode($fullDataUri);
+                 }
             }
+
 
             $imgBytes = null;
             try {
@@ -81,6 +85,7 @@ class ProductsControllerKeychains extends Controller
             }
 
             if ($imgBytes && strlen($imgBytes) > 64) {
+                // ... (Mockup upload logic) ...
                 try {
                     $shopify->createProductImage($product['id'], [
                         'attachment' => base64_encode($imgBytes),
@@ -95,27 +100,27 @@ class ProductsControllerKeychains extends Controller
             }
 
             // --- Upload user-provided images
-            foreach ($images as $idx => $img) {
+            // 💡 CRITICAL CHANGE: Only upload the first image
+            if ($firstImage) {
                 try {
-                    // 💡 FIX 2: Restore '+' signs for Shopify API (required for valid Base64)
-                    $attachment = str_replace(' ', '+', $img);
+                    $attachment = str_replace(' ', '+', $firstImage);
                     
                     if (strlen($attachment) > 100) {
                         $shopify->createProductImage($product['id'], [
                             'attachment' => $attachment, // Clean, raw Base64 string
-                            'filename'   => "keychain_{$idx}.png",
-                            'position'   => $idx + 2,
+                            'filename'   => "keychain_0.png", // Explicitly name it '0'
+                            'position'   => 2,
                         ]);
                     } else {
-                        \Log::warning("User image {$idx} too short/invalid, skipping.");
+                        \Log::warning("User image 0 too short/invalid, skipping.");
                     }
                 } catch (\Throwable $e) {
-                    \Log::warning("Failed to upload user image {$idx}: " . $e->getMessage());
+                    \Log::warning("Failed to upload user image 0: " . $e->getMessage());
                 }
             }
 
-            // --- Save local record
-            $albumRecord = Album::create([
+            // --- Save local record (Unchanged)
+            $albumRecord = \App\Models\Album::create([
                 'shopify_id'   => $product['id'],
                 'title'        => $album['title'],
                 'artist'       => $album['artist'],
@@ -130,10 +135,10 @@ class ProductsControllerKeychains extends Controller
                 'success'   => true,
                 'productId' => $product['id'],
                 'productUrl'  => $albumRecord->shopify_url,
-                'localRecord' => new AlbumResource($albumRecord),
+                'localRecord' => new \App\Http\Resources\AlbumResource($albumRecord),
             ]);
         } catch (\Throwable $e) {
-            // ✅ Catches all exceptions (validation, runtime, etc.)
+            // Catches all exceptions
             \Log::error('Keychain create failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
 
             return response()->json([
@@ -142,4 +147,3 @@ class ProductsControllerKeychains extends Controller
             ], 200);
         }
     }
-}

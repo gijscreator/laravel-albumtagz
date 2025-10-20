@@ -1,137 +1,125 @@
-<?php
-
-namespace App\Http\Controllers;
-
-use Illuminate\Http\Request;
-use Illuminate\Support\Str;
-use App\Models\Album;
-use App\Http\Resources\AlbumResource;
-use Signifly\Shopify\Shopify;
-
-class ProductsControllerKeychains extends Controller
+public function storeKeychain(Request $request)
 {
-    public function store(Request $request)
-    {
-        // ✅ 1. Validate input
+    try {
+        // ✅ Validate request safely
         $data = $request->validate([
             'album.title'      => 'required|string|max:255',
             'album.artist'     => 'required|string|max:255',
             'album.spotifyUrl' => 'nullable|string|max:255',
             'uploadedImages'   => 'required|array|min:1',
             'uploadedImages.*' => 'string',
+            'customerId'       => 'nullable|string',
         ]);
 
-        $album  = $data['album'];
-        $images = $data['uploadedImages'];
+        $album      = $data['album'];
+        $images     = $data['uploadedImages'];
+        $customerId = $data['customerId'] ?? 'guest';
 
-        // ✅ 2. Shopify client (same as Albumtagz)
-        $shopify = new Shopify(
+        // ✅ Shopify client
+        $shopify = new \Signifly\Shopify\Shopify(
             config('albumtagz.shop_access_code'),
             config('albumtagz.shop_url'),
             config('albumtagz.shop_api_version')
         );
 
-        $handle = Str::slug($album['title'] . '-' . $album['artist'] . '-keychain');
+        $handle = \Illuminate\Support\Str::slug($album['title'] . '-' . $album['artist'] . '-keychain');
 
-        // ✅ 3. Build compositor mockup URL using first image
-        $cacheBuster = $album['spotifyUrl'] ?? (string) Str::uuid();
-        $imageUrl = 'https://dtchdesign.nl/create-product/img.php?albumImg='
-                  . urlencode($images[0])
-                  . '&v=' . rawurlencode($cacheBuster);
+        // ✅ Create product (hidden)
+        $product = $shopify->createProduct([
+            'title'           => "{$album['title']} Custom Keychain",
+            'vendor'          => $album['artist'],
+            'product_type'    => 'Custom Keychain',
+            'status'          => 'active',
+            'published_scope' => 'none',
+            'handle'          => $handle,
+            'tags'            => 'custom,keychain,private',
+            'body_html'       => "<p>Personalized keychain for {$album['artist']}.</p>",
+            'variants'        => [[
+                'price'             => "19.95",
+                'compare_at_price'  => "24.95",
+                'requires_shipping' => true,
+            ]],
+        ]);
 
-        // ✅ 4. Fetch compositor image
+        // ✅ Build compositor mockup URL
+        $mockupUrl = 'https://dtchdesign.nl/create-product/img.php?mode=keychain';
+        foreach (['front','inner_left','inner_right','disc','back'] as $i => $key) {
+            if (!empty($images[$i])) {
+                $mockupUrl .= '&' . $key . '=' . urlencode($images[$i]);
+            }
+        }
+
+        // ✅ Try fetching the compositor image (with timeout + fallback)
         $imgBytes = null;
         try {
-            $ctx = stream_context_create(['http' => ['timeout' => 8]]);
-            $imgBytes = @file_get_contents($imageUrl, false, $ctx);
+            $ctx = stream_context_create(['http' => ['timeout' => 10]]);
+            $imgBytes = @file_get_contents($mockupUrl, false, $ctx);
         } catch (\Throwable $e) {
             \Log::warning('Mockup fetch failed: ' . $e->getMessage());
         }
 
-        if (!$imgBytes || strlen($imgBytes) < 64) {
-            return response()->json(['message' => 'Unable to fetch album image.'], 422);
-        }
-
-        // ✅ 5. Convert to WEBP (optional, same logic as Albumtagz)
-        $payloadBytes = $imgBytes;
-        $filename = 'mockup_' . $handle . '.webp';
-        try {
-            if (function_exists('imagewebp')) {
-                $im = @imagecreatefromstring($imgBytes);
-                if ($im !== false) {
-                    if (function_exists('imagepalettetotruecolor')) @imagepalettetotruecolor($im);
-                    @imagealphablending($im, true);
-                    @imagesavealpha($im, true);
-                    ob_start();
-                    @imagewebp($im, null, 90);
-                    $webp = ob_get_clean();
-                    @imagedestroy($im);
-                    if ($webp && strlen($webp) > 64) $payloadBytes = $webp;
-                }
-            }
-        } catch (\Throwable $e) {}
-
-        // ✅ 6. Create Shopify product
-        $product = $shopify->createProduct([
-            'title'        => "{$album['title']} Custom Keychain",
-            'vendor'       => $album['artist'],
-            'product_type' => 'Music Keychain',
-            'status'       => 'active',
-            'handle'       => $handle,
-            'body_html'    => "<p>Artist: {$album['artist']}</p><p>Spotify URL: {$album['spotifyUrl']}</p>",
-            'variants'     => [[
-                'price'                => "19.95",
-                'compare_at_price'     => "24.95",
-                'requires_shipping'    => true,
-                'inventory_management' => null,
-            ]],
-        ]);
-
-        // ✅ 7. Upload mockup image
-        try {
-            $shopify->createProductImage($product['id'], [
-                'attachment' => base64_encode($payloadBytes),
-                'filename'   => $filename,
-                'position'   => 1,
-            ]);
-        } catch (\Throwable $e) {
-            \Log::error('Shopify mockup upload failed: ' . $e->getMessage());
-        }
-
-        // ✅ 8. Upload all user images
-        foreach ($images as $idx => $img) {
+        if ($imgBytes && strlen($imgBytes) > 64) {
             try {
-                $attachment = str_starts_with($img, 'data:image')
-                    ? preg_replace('#^data:image/\w+;base64,#i', '', $img)
-                    : base64_encode(file_get_contents($img));
                 $shopify->createProductImage($product['id'], [
-                    'attachment' => $attachment,
-                    'filename'   => "keychain_user_{$idx}.png",
-                    'position'   => $idx + 2,
+                    'attachment' => base64_encode($imgBytes),
+                    'filename'   => 'keychain_mockup.webp',
+                    'position'   => 1,
                 ]);
             } catch (\Throwable $e) {
-                \Log::warning("User image {$idx} upload failed: " . $e->getMessage());
+                \Log::error('Shopify mockup upload failed: ' . $e->getMessage());
+            }
+        } else {
+            \Log::warning('Mockup not generated or empty: ' . $mockupUrl);
+        }
+
+        // ✅ Upload each user image safely (ignore broken base64)
+        foreach ($images as $idx => $img) {
+            try {
+                if (str_starts_with($img, 'data:image')) {
+                    $attachment = preg_replace('#^data:image/\w+;base64,#i', '', $img);
+                } else {
+                    $attachment = base64_encode(@file_get_contents($img));
+                }
+
+                if (strlen($attachment) > 100) {
+                    $shopify->createProductImage($product['id'], [
+                        'attachment' => $attachment,
+                        'filename'   => "keychain_{$idx}.png",
+                        'position'   => $idx + 2,
+                    ]);
+                } else {
+                    \Log::warning("User image {$idx} invalid or empty, skipping.");
+                }
+            } catch (\Throwable $e) {
+                \Log::warning("Failed to upload user image {$idx}: " . $e->getMessage());
             }
         }
 
-        // ✅ 9. Save local record
-        $albumRecord = Album::create([
+        // ✅ Save to DB
+        $albumRecord = \App\Models\Album::create([
             'shopify_id'   => $product['id'],
             'title'        => $album['title'],
             'artist'       => $album['artist'],
-            'image'        => $imageUrl,
+            'image'        => $mockupUrl ?? null,
             'spotify_url'  => $album['spotifyUrl'] ?? null,
             'shopify_url'  => 'https://www.albumtagz.com/products/' . $product['handle'],
             'delete_at'    => now()->addHours(12),
             'product_type' => 'keychain',
         ]);
 
-        // ✅ 10. Return JSON
         return response()->json([
             'success'     => true,
             'productId'   => $product['id'],
             'productUrl'  => $albumRecord->shopify_url,
-            'localRecord' => new AlbumResource($albumRecord),
+            'localRecord' => new \App\Http\Resources\AlbumResource($albumRecord),
         ]);
+    } catch (\Throwable $e) {
+        // ✅ Never 500 — always JSON response
+        \Log::error('Keychain create failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Server error: ' . $e->getMessage(),
+        ], 200);
     }
 }

@@ -249,7 +249,7 @@ class ProductsController extends Controller
             'shopify_id'   => $product['id'],
             'title'        => $album['title'],
             'artist'       => $album['artist'],
-            'image'        => $mockupUrl ?? ($images[0] ?? null),
+            'image'        => $mockupUrl ?? null,
             'spotify_url'  => $album['spotifyUrl'] ?? null,
             'shopify_url'  => 'https://www.albumtagz.com/products/' . $product['handle'],
             'delete_at'    => now()->addHours(12),

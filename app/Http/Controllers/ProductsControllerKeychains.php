@@ -120,7 +120,7 @@ class ProductsControllerKeychains extends Controller
      * Implemented from abstract Controller.
      * Returns the product type handled by this controller.
      */
-    public function getProductType()
+    public function getProductType(): string
     {
         return 'keychain';
     }

@@ -53,8 +53,8 @@ class ProductsControllerKeychains extends Controller
                         ? "<p><a href=\"{$data['spotifyUrl']}\" target=\"_blank\">Listen on Spotify</a></p>"
                         : ''),
                 'variants' => [[
-                    'price'                => '14.95',
-                    'compare_at_price'     => '19.95',
+                    'price'                => '19.95',
+                    'compare_at_price'     => '24.95',
                     'requires_shipping'    => true,
                     'inventory_management' => null,
                 ]],

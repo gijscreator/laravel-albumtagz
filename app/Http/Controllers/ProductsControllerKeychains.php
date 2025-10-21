@@ -19,18 +19,14 @@ class ProductsControllerKeychains extends Controller
     public function storeKeychain(Request $request)
 {
     try {
+        // ✅ Accept the exact JSON the JS sends
         $data = $request->validate([
-            'album.title'      => 'required|string|max:255',
-            'album.artist'     => 'required|string|max:255',
-            'album.spotifyUrl' => 'nullable|string|max:255',
-            'uploadedImages'   => 'required|array|min:1|max:5',
-            'uploadedImages.*' => 'string',
-            'customerId'       => 'nullable|string',
+            'title'      => 'required|string|max:255',
+            'artist'     => 'required|string|max:255',
+            'spotifyUrl' => 'nullable|string|max:255',
+            'images'     => 'required|array|min:1|max:5',
+            'images.*'   => 'nullable|string',
         ]);
-
-        $album      = $data['album'];
-        $images     = $data['uploadedImages'];
-        $customerId = $data['customerId'] ?? 'guest';
 
         // --- Shopify client
         $shopify = new \Signifly\Shopify\Shopify(
@@ -39,40 +35,43 @@ class ProductsControllerKeychains extends Controller
             config('albumtagz.shop_api_version')
         );
 
-        // ✅ New product naming and handle
-        $title  = "Custom | {$album['title']} – {$album['artist']}";
-        $handle = \Illuminate\Support\Str::slug("custom-{$album['title']}-{$album['artist']}");
+        // ✅ Product naming and handle
+        $title  = "Custom | {$data['title']} – {$data['artist']}";
+        $handle = Str::slug("custom-{$data['title']}-{$data['artist']}");
 
-        // ✅ Create product without mockup or Spotify image
+        // ✅ Create product in Shopify
         $product = $shopify->createProduct([
             'title'           => $title,
-            'vendor'          => $album['artist'],
+            'vendor'          => $data['artist'],
             'product_type'    => 'Custom Keychain',
             'status'          => 'active',
             'published_scope' => 'web',
             'handle'          => $handle,
             'tags'            => 'custom,keychain,generated',
-            'body_html'       => "<p>Custom-made keychain inspired by <b>{$album['title']}</b> by <b>{$album['artist']}</b>.</p>"
-                                . (!empty($album['spotifyUrl']) ? "<p><a href=\"{$album['spotifyUrl']}\" target=\"_blank\">Listen on Spotify</a></p>" : ''),
+            'body_html'       => "<p>Custom-made keychain inspired by <b>{$data['title']}</b> by <b>{$data['artist']}</b>.</p>"
+                . (!empty($data['spotifyUrl']) ? "<p><a href=\"{$data['spotifyUrl']}\" target=\"_blank\">Listen on Spotify</a></p>" : ''),
             'variants' => [[
-                'price'              => "14.95",
-                'compare_at_price'   => "19.95",
-                'requires_shipping'  => true,
+                'price'                => '14.95',
+                'compare_at_price'     => '19.95',
+                'requires_shipping'    => true,
                 'inventory_management' => null,
             ]],
         ]);
 
-        // ✅ Upload all customer images (no mockup, no Spotify art)
-        foreach ($images as $index => $imgBase64) {
-            try {
-                $attachment = str_replace(' ', '+', $imgBase64);
-                if (strlen($attachment) < 100) {
-                    \Log::warning("Uploaded image #{$index} too short/invalid, skipping.");
-                    continue;
-                }
+        // ✅ Upload customer images (remove base64 header)
+        foreach ($data['images'] as $index => $imgBase64) {
+            if (!$imgBase64) continue;
+            if (strlen($imgBase64) < 100) {
+                \Log::warning("Uploaded image #{$index} too short/invalid, skipping.");
+                continue;
+            }
 
+            // Strip header if present
+            $clean = preg_replace('#^data:image/\w+;base64,#i', '', $imgBase64);
+
+            try {
                 $shopify->createProductImage($product['id'], [
-                    'attachment' => $attachment,
+                    'attachment' => $clean,
                     'filename'   => "custom_keychain_{$index}.jpg",
                     'position'   => $index + 1,
                 ]);
@@ -81,13 +80,16 @@ class ProductsControllerKeychains extends Controller
             }
         }
 
-        // ✅ Save local record (optional, keep same as before)
+        // ✅ Grab variant ID
+        $variantId = $product['variants'][0]['id'] ?? null;
+
+        // ✅ Optional local record
         $albumRecord = \App\Models\Album::create([
             'shopify_id'   => $product['id'],
-            'title'        => $album['title'],
-            'artist'       => $album['artist'],
-            'image'        => null, // No mockup image
-            'spotify_url'  => $album['spotifyUrl'] ?? null,
+            'title'        => $data['title'],
+            'artist'       => $data['artist'],
+            'image'        => null,
+            'spotify_url'  => $data['spotifyUrl'] ?? null,
             'shopify_url'  => 'https://www.albumtagz.com/products/' . $product['handle'],
             'delete_at'    => now()->addHours(12),
             'product_type' => 'keychain',
@@ -95,9 +97,9 @@ class ProductsControllerKeychains extends Controller
 
         return response()->json([
             'success'      => true,
-            'productId'    => $product['id'],
-            'productUrl'   => $albumRecord->shopify_url,
-            'localRecord'  => new \App\Http\Resources\AlbumResource($albumRecord),
+            'product_id'   => $product['id'],
+            'variant_id'   => $variantId,
+            'product_url'  => $albumRecord->shopify_url,
         ]);
     } catch (\Throwable $e) {
         \Log::error('Keychain create failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
@@ -105,6 +107,7 @@ class ProductsControllerKeychains extends Controller
         return response()->json([
             'success' => false,
             'message' => 'Server error: ' . $e->getMessage(),
-        ], 200);
+        ], 500);
     }
 }
+

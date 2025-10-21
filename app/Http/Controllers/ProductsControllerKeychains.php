@@ -49,7 +49,9 @@ class ProductsControllerKeychains extends Controller
                 'handle'          => $handle,
                 'tags'            => 'custom,keychain,generated',
                 'body_html'       => "<p>Custom-made keychain inspired by <b>{$data['title']}</b> by <b>{$data['artist']}</b>.</p>"
-                    . (!empty($data['spotifyUrl']) ? "<p><a href=\"{$data['spotifyUrl']}\" target=\"_blank\">Listen on Spotify</a></p>" : ''),
+                    . (!empty($data['spotifyUrl'])
+                        ? "<p><a href=\"{$data['spotifyUrl']}\" target=\"_blank\">Listen on Spotify</a></p>"
+                        : ''),
                 'variants' => [[
                     'price'                => '14.95',
                     'compare_at_price'     => '19.95',
@@ -63,6 +65,7 @@ class ProductsControllerKeychains extends Controller
                 if (!$imgBase64) {
                     continue;
                 }
+
                 if (strlen($imgBase64) < 100) {
                     \Log::warning("Uploaded image #{$index} too short/invalid, skipping.");
                     continue;
@@ -111,5 +114,14 @@ class ProductsControllerKeychains extends Controller
                 'message' => 'Server error: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Implemented from abstract Controller.
+     * Returns the product type handled by this controller.
+     */
+    public function getProductType()
+    {
+        return 'keychain';
     }
 }

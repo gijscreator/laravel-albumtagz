@@ -44,7 +44,7 @@ class ProductsControllerKeychains extends Controller
                 'title'           => $title,
                 'vendor'          => $data['artist'],
                 'product_type'    => 'Custom Keychain',
-                'status'          => 'active',
+                'status'          => 'unlisted',
                 'published_scope' => 'web',
                 'handle'          => $handle,
                 'tags'            => 'custom,keychain,generated',

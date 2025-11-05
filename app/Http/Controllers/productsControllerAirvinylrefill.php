@@ -74,7 +74,7 @@ class productsControllerAirvinylrefill extends Controller
             'artist' => $data['artist'],
             'image' => $image,
             'spotify_url' => $data['spotifyUrl'],
-            'shopify_url' => 'https://www.albumtagz.com/products/' . $product['handle'],
+            'shopify_url' => 'https://www.musictags.eu/products/' . $product['handle'],
             'delete_at' => now()->addMinutes(15),
             'product_type' => $this->getProductType()
         ]);

@@ -95,7 +95,7 @@ class ProductsControllerKeychains extends Controller
                 'artist'       => $data['artist'],
                 'image'        => null,
                 'spotify_url'  => $data['spotifyUrl'] ?? null,
-                'shopify_url'  => 'https://www.albumtagz.com/products/' . $product['handle'],
+                'shopify_url'  => 'https://www.musictags.eu/products/' . $product['handle'],
                 'delete_at'    => now()->addHours(12),
                 'product_type' => 'keychain',
             ]);

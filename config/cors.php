@@ -9,11 +9,11 @@ return [
 
     // Exact origins you use in production
     'allowed_origins' => [
-        'https://www.albumtagz.com',
-        'https://albumtagz.com',
-        'https://create.albumtagz.com',
+        'https://www.musictags.eu',
+        'https://musictags.eu',
+        'https://create.musictags.eu',
         // add any custom storefront host you actually use, e.g.:
-        // 'https://shop.albumtagz.com',
+        // 'https://shop.musictags.eu',
         'https://745b68-a1.myshopify.com',
         // local/dev:
         'http://127.0.0.1:3002',
@@ -23,7 +23,7 @@ return [
     'allowed_origins_patterns' => [
         // allow any myshopify storefront subdomain
         '^https:\/\/[a-z0-9-]+\.myshopify\.com$',
-        // optional: allow any subdomain of albumtagz.com (e.g., staging)
+        // optional: allow any subdomain of musictags.eu (e.g., staging)
         '^https:\/\/([a-z0-9-]+\.)?albumtagz\.com$',
     ],
 

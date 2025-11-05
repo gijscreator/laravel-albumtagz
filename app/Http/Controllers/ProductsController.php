@@ -100,7 +100,7 @@ class ProductsController extends Controller
 
         // --- Create product on Shopify
         $product = $shopify->createProduct([
-            'title'        => "{$data['title']} Albumtag",
+            'title'        => "{$data['title']} Musictag",
             'vendor'       => $data['artist'],
             'product_type' => 'Music',
             'status'       => 'active',

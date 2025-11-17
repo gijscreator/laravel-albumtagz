@@ -147,7 +147,9 @@ class ProductsControllerKeychains extends Controller
                 'product_id'   => $product['id'], // ✅ Make sure this is included
                 'variant_id'   => $variantId,
                 'product_url'  => $albumRecord->shopify_url,
-            ]);
+            ])->header('Access-Control-Allow-Origin', '*')
+              ->header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+              ->header('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization');
 
         } catch (\Throwable $e) {
             \Log::error('Keychain create failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
@@ -155,7 +157,9 @@ class ProductsControllerKeychains extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Server Error', // ✅ Simplified error message
-            ], 500);
+            ], 500)->header('Access-Control-Allow-Origin', '*')
+              ->header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+              ->header('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization');
         }
     }
 
@@ -325,7 +329,9 @@ class ProductsControllerKeychains extends Controller
                 'variant1_id'  => $variant1Id,
                 'variant2_id'  => $variant2Id,
                 'product_url'  => $albumRecord->shopify_url,
-            ]);
+            ])->header('Access-Control-Allow-Origin', '*')
+              ->header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+              ->header('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization');
 
         } catch (\Throwable $e) {
             \Log::error('Couple keychain create failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
@@ -333,8 +339,34 @@ class ProductsControllerKeychains extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Server Error',
-            ], 500);
+            ], 500)->header('Access-Control-Allow-Origin', '*')
+              ->header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+              ->header('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization');
         }
+    }
+
+    /**
+     * Handle OPTIONS request for CORS preflight
+     */
+    public function optionsKeychain()
+    {
+        return response()->json([])
+            ->header('Access-Control-Allow-Origin', '*')
+            ->header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+            ->header('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization')
+            ->header('Access-Control-Max-Age', '86400');
+    }
+
+    /**
+     * Handle OPTIONS request for CORS preflight (couple)
+     */
+    public function optionsCoupleKeychain()
+    {
+        return response()->json([])
+            ->header('Access-Control-Allow-Origin', '*')
+            ->header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+            ->header('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization')
+            ->header('Access-Control-Max-Age', '86400');
     }
 
     /**

@@ -105,7 +105,6 @@ class ProductsController extends Controller
             'product_type' => 'Music',
             'status'       => 'active',
             'handle'       => $handle,
-            'collectionId'    => '649728622927'
             'body_html'    => "<p>Artist: {$data['artist']}</p><p>Spotify URL: {$data['spotifyUrl']}</p>",
             'variants'     => [[
                 'price'                => "14.95",

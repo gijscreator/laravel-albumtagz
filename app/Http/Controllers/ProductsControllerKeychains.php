@@ -19,13 +19,14 @@ class ProductsControllerKeychains extends Controller
     public function storeKeychain(Request $request)
     {
         try {
-            // ✅ Accept the exact JSON the JS sends
+            // ✅ Accept the exact JSON the JS sends (including optional collectionId)
             $data = $request->validate([
-                'title'      => 'required|string|max:255',
-                'artist'     => 'required|string|max:255',
-                'spotifyUrl' => 'nullable|string|max:255',
-                'images'     => 'required|array|min:1|max:5',
-                'images.*'   => 'nullable|string',
+                'title'        => 'required|string|max:255',
+                'artist'       => 'required|string|max:255',
+                'spotifyUrl'   => 'nullable|string|max:255',
+                'images'       => 'required|array|min:1|max:5',
+                'images.*'     => 'nullable|string',
+                'collectionId' => 'nullable|string', // ✅ NEW: Accept collection ID
             ]);
 
             // --- Shopify client
@@ -47,7 +48,7 @@ class ProductsControllerKeychains extends Controller
                 'status'          => 'unlisted',
                 'published_scope' => 'web',
                 'handle'          => $handle,
-                'collectionId'    => '677136630095'
+                // ✅ REMOVED: Don't set collectionId here (it's not a valid Shopify product field)
                 'tags'            => 'custom,keychain,generated',
                 'body_html'       => "<p>Custom-made keychain inspired by <b>{$data['title']}</b> by <b>{$data['artist']}</b>.</p>"
                     . (!empty($data['spotifyUrl'])
@@ -86,6 +87,49 @@ class ProductsControllerKeychains extends Controller
                 }
             }
 
+            // ✅ NEW: Add product to collection if collectionId is provided
+            if (!empty($data['collectionId']) && !empty($product['id'])) {
+                try {
+                    // Use Shopify REST API to add product to collection
+                    // POST /admin/api/{version}/collects.json
+                    $apiVersion = config('albumtagz.shop_api_version', '2024-01');
+                    $shopUrl = config('albumtagz.shop_url');
+                    $accessToken = config('albumtagz.shop_access_code');
+                    
+                    // Make direct HTTP request to Shopify API
+                    $collectUrl = "https://{$shopUrl}/admin/api/{$apiVersion}/collects.json";
+                    
+                    $ch = curl_init($collectUrl);
+                    curl_setopt_array($ch, [
+                        CURLOPT_RETURNTRANSFER => true,
+                        CURLOPT_POST => true,
+                        CURLOPT_HTTPHEADER => [
+                            'Content-Type: application/json',
+                            "X-Shopify-Access-Token: {$accessToken}",
+                        ],
+                        CURLOPT_POSTFIELDS => json_encode([
+                            'collect' => [
+                                'product_id'   => (string)$product['id'],
+                                'collection_id' => (string)$data['collectionId'],
+                            ]
+                        ]),
+                    ]);
+                    
+                    $response = curl_exec($ch);
+                    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                    curl_close($ch);
+                    
+                    if ($httpCode >= 200 && $httpCode < 300) {
+                        \Log::info("✅ Product {$product['id']} added to collection {$data['collectionId']}");
+                    } else {
+                        \Log::warning("⚠️ Failed to add product {$product['id']} to collection {$data['collectionId']}. HTTP {$httpCode}: {$response}");
+                    }
+                } catch (\Throwable $e) {
+                    // Log but don't fail - product was created successfully
+                    \Log::warning("⚠️ Failed to add product {$product['id']} to collection {$data['collectionId']}: " . $e->getMessage());
+                }
+            }
+
             // ✅ Grab variant ID
             $variantId = $product['variants'][0]['id'] ?? null;
 
@@ -103,16 +147,17 @@ class ProductsControllerKeychains extends Controller
 
             return response()->json([
                 'success'      => true,
-                'product_id'   => $product['id'],
+                'product_id'   => $product['id'], // ✅ Make sure this is included
                 'variant_id'   => $variantId,
                 'product_url'  => $albumRecord->shopify_url,
             ]);
+
         } catch (\Throwable $e) {
             \Log::error('Keychain create failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Server error: ' . $e->getMessage(),
+                'message' => 'Server Error', // ✅ Simplified error message
             ], 500);
         }
     }
@@ -126,3 +171,4 @@ class ProductsControllerKeychains extends Controller
         return 'keychain';
     }
 }
+

@@ -47,6 +47,7 @@ class ProductsControllerKeychains extends Controller
                 'status'          => 'unlisted',
                 'published_scope' => 'web',
                 'handle'          => $handle,
+                'collectionId'    => '677136630095'
                 'tags'            => 'custom,keychain,generated',
                 'body_html'       => "<p>Custom-made keychain inspired by <b>{$data['title']}</b> by <b>{$data['artist']}</b>.</p>"
                     . (!empty($data['spotifyUrl'])

@@ -132,7 +132,7 @@ class ProductsController extends Controller
             'artist'       => $data['artist'],
             'image'        => $imageUrl,
             'spotify_url'  => $data['spotifyUrl'],
-            'shopify_url'  => 'https://www.musictags.eu/products/' . $product['handle'],
+            'shopify_url'  => 'https://www.albumtags.eu/products/' . $product['handle'],
             'delete_at'    => now()->addMinutes(15),
             'product_type' => $this->getProductType(),
         ]);
@@ -251,7 +251,7 @@ class ProductsController extends Controller
             'artist'       => $album['artist'],
             'image'        => $mockupUrl ?? null,
             'spotify_url'  => $album['spotifyUrl'] ?? null,
-            'shopify_url'  => 'https://www.musictags.eu/products/' . $product['handle'],
+            'shopify_url'  => 'https://www.albumtags.eu/products/' . $product['handle'],
             'delete_at'    => now()->addHours(12),
             'product_type' => 'keychain',
         ]);

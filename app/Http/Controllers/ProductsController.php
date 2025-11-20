@@ -36,12 +36,32 @@ class ProductsController extends Controller
             return new AlbumResource($existingProduct);
         }
 
+        // Verify Shopify credentials are configured
+        $shopAccessCode = config('albumtagz.shop_access_code');
+        $shopUrl = config('albumtagz.shop_url');
+        $shopApiVersion = config('albumtagz.shop_api_version');
+
+        if (!$shopAccessCode || !$shopUrl) {
+            \Log::error('Shopify credentials missing', [
+                'shop_url' => $shopUrl,
+                'has_access_code' => !empty($shopAccessCode),
+            ]);
+            return response()->json([
+                'message' => 'Shopify configuration error. Please check server configuration.',
+                'error' => 'Missing Shopify credentials'
+            ], 500);
+        }
+
         // Shopify client
-        $shopify = new Shopify(
-            config('albumtagz.shop_access_code'),
-            config('albumtagz.shop_url'),
-            config('albumtagz.shop_api_version')
-        );
+        try {
+            $shopify = new Shopify($shopAccessCode, $shopUrl, $shopApiVersion);
+        } catch (\Throwable $e) {
+            \Log::error('Failed to initialize Shopify client: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Failed to connect to Shopify. Please verify credentials.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
 
         $handle = Str::slug($data['title'] . '-' . $data['artist']);
 
@@ -99,20 +119,32 @@ class ProductsController extends Controller
         }
 
         // --- Create product on Shopify
-        $product = $shopify->createProduct([
-            'title'        => "{$data['title']} Musictag",
-            'vendor'       => $data['artist'],
-            'product_type' => 'Music',
-            'status'       => 'active',
-            'handle'       => $handle,
-            'body_html'    => "<p>Artist: {$data['artist']}</p><p>Spotify URL: {$data['spotifyUrl']}</p>",
-            'variants'     => [[
-                'price'                => "14.95",
-                'compare_at_price'     => "19.95",
-                'requires_shipping'    => true,
-                'inventory_management' => null,
-            ]],
-        ]);
+        try {
+            $product = $shopify->createProduct([
+                'title'        => "{$data['title']} Musictag",
+                'vendor'       => $data['artist'],
+                'product_type' => 'Music',
+                'status'       => 'active',
+                'handle'       => $handle,
+                'body_html'    => "<p>Artist: {$data['artist']}</p><p>Spotify URL: {$data['spotifyUrl']}</p>",
+                'variants'     => [[
+                    'price'                => "14.95",
+                    'compare_at_price'     => "19.95",
+                    'requires_shipping'    => true,
+                    'inventory_management' => null,
+                ]],
+            ]);
+        } catch (\Throwable $e) {
+            \Log::error('Shopify product creation failed', [
+                'error' => $e->getMessage(),
+                'shop_url' => $shopUrl,
+                'handle' => $handle,
+            ]);
+            return response()->json([
+                'message' => 'Failed to create product in Shopify. Please verify API credentials and permissions.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
 
         // --- Upload album mockup
         try {
@@ -126,18 +158,26 @@ class ProductsController extends Controller
         }
 
         // --- Save record locally
-        $album = Album::create([
-            'shopify_id'   => $product['id'],
-            'title'        => $data['title'],
-            'artist'       => $data['artist'],
-            'image'        => $imageUrl,
-            'spotify_url'  => $data['spotifyUrl'],
-            'shopify_url'  => 'https://www.albumtags.eu/products/' . $product['handle'],
-            'delete_at'    => now()->addMinutes(15),
-            'product_type' => $this->getProductType(),
-        ]);
+        try {
+            $album = Album::create([
+                'shopify_id'   => $product['id'],
+                'title'        => $data['title'],
+                'artist'       => $data['artist'],
+                'image'        => $imageUrl,
+                'spotify_url'  => $data['spotifyUrl'],
+                'shopify_url'  => 'https://www.musictags.eu/products/' . $product['handle'],
+                'delete_at'    => now()->addMinutes(15),
+                'product_type' => $this->getProductType(),
+            ]);
 
-        return new AlbumResource($album);
+            return new AlbumResource($album);
+        } catch (\Throwable $e) {
+            \Log::error('Failed to save album record: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Product created in Shopify but failed to save locally.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     // ------------------------------------------------------------
@@ -251,7 +291,7 @@ class ProductsController extends Controller
             'artist'       => $album['artist'],
             'image'        => $mockupUrl ?? null,
             'spotify_url'  => $album['spotifyUrl'] ?? null,
-            'shopify_url'  => 'https://www.albumtags.eu/products/' . $product['handle'],
+            'shopify_url'  => 'https://www.musictags.eu/products/' . $product['handle'],
             'delete_at'    => now()->addHours(12),
             'product_type' => 'keychain',
         ]);

@@ -11,12 +11,13 @@ return [
     'allowed_origins' => [
         'https://www.albumtags.eu',
         'https://albumtags.eu',
-        'https://create.albumtags.eu',
+        'https://codes.albumtagz.com',
+        'https://dtchdesign.nl',
         // add any custom storefront host you actually use, e.g.:
         // 'https://shop.albumtags.eu',
         'https://745b68-a1.myshopify.com',
         // local/dev:
-        'http://127.0.0.1:3002',
+        'http://127.0.0.1:3002'
     ],
 
     // Wildcard patterns (useful if your myshopify subdomain might change)
